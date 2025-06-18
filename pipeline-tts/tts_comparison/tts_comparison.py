@@ -11,9 +11,6 @@ logger.setLevel(logging.INFO)
 
 load_dotenv(dotenv_path=Path(__file__).parent.parent / '.env')
 
-### We're not including the OpenAI TTS provider here, since it uses a different sample rate.
-### See openai_tts.py for an example of how to use it.
-
 class RimeAgent(Agent):
     def __init__(self) -> None:
         super().__init__(
