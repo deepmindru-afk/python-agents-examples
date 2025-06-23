@@ -9,14 +9,14 @@ from livekit.plugins import openai, deepgram, silero
 
 load_dotenv(dotenv_path=Path(__file__).parent.parent / '.env')
 
-logger = logging.getLogger("listen-and-respond")
+logger = logging.getLogger("keyword-detection")
 logger.setLevel(logging.INFO)
 
-class SimpleAgent(Agent):
+class KeywordDetectionAgent(Agent):
     def __init__(self) -> None:
         super().__init__(
             instructions="""
-                You are a helpful agent.
+                You are a helpful agent that detects keywords in user speech.
             """,
             stt=deepgram.STT(),
             llm=openai.LLM(),
@@ -28,7 +28,7 @@ class SimpleAgent(Agent):
         self.session.generate_reply()
     
     async def stt_node(self, text: AsyncIterable[str], model_settings: Optional[dict] = None) -> Optional[AsyncIterable[rtc.AudioFrame]]:
-        keywords = ["Shane", "hello", "thanks"]
+        keywords = ["Shane", "hello", "thanks", "bye"]
         parent_stream = super().stt_node(text, model_settings)
         
         if parent_stream is None:
@@ -53,7 +53,7 @@ async def entrypoint(ctx: JobContext):
     session = AgentSession()
 
     await session.start(
-        agent=SimpleAgent(),
+        agent=KeywordDetectionAgent(),
         room=ctx.room
     )
 
