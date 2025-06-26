@@ -25,6 +25,9 @@ export async function GET(request: NextRequest) {
     if (currentDir.includes('agent-starter-react')) {
       // We're running from inside agent-starter-react
       basePath = path.join(currentDir, '..');
+    } else if (currentDir.endsWith('demo-frontends')) {
+      // We're running from demo-frontends, need to go up one level
+      basePath = path.join(currentDir, '..');
     } else if (currentDir.endsWith('demo-monolith')) {
       // We're already in demo-monolith
       basePath = currentDir;
