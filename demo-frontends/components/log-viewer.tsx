@@ -5,10 +5,12 @@ import { cn } from '@/lib/utils';
 
 interface LogViewerProps {
   agentPath?: string;
+  demoKey?: string;
+  isAppDemo?: boolean;
   className?: string;
 }
 
-export function LogViewer({ agentPath, className }: LogViewerProps) {
+export function LogViewer({ agentPath, demoKey, isAppDemo, className }: LogViewerProps) {
   const [logs, setLogs] = useState<string[]>([]);
   const [connected, setConnected] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
@@ -17,6 +19,7 @@ export function LogViewer({ agentPath, className }: LogViewerProps) {
   useEffect(() => {
     if (!agentPath) return;
 
+    // Always use EventSource for Python agent logs
     const eventSource = new EventSource(`/api/demos/agent/logs?agentPath=${encodeURIComponent(agentPath)}`);
 
     eventSource.onopen = () => {

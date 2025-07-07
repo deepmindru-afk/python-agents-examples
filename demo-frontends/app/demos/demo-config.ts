@@ -2,6 +2,7 @@ export interface DemoConfig {
   name: string;
   description: string;
   tags: string[];
+  type?: 'component' | 'app'; // Default is 'component' for backward compatibility
   agentPath?: string;
   capabilities: {
     suportsChatInput: boolean;
@@ -9,6 +10,8 @@ export interface DemoConfig {
     suportsScreenShare: boolean;
   };
   customComponent?: string;
+  appPath?: string; // Path to the app frontend directory (for type: 'app')
+  appPort?: number; // Port to run the app on (for type: 'app')
 }
 
 export const demos: Record<string, DemoConfig> = {
@@ -83,13 +86,15 @@ export const demos: Record<string, DemoConfig> = {
     name: 'Teleprompter',
     description: 'Real-time teleprompter with AI assistance',
     tags: ['Complex', 'TTS'],
+    type: 'app',
     agentPath: '/complex-agents/teleprompter/cartesia-ink.py',
+    appPath: '/complex-agents/teleprompter/teleprompter-frontend',
+    appPort: 3001, // Run on a different port to avoid conflicts
     capabilities: {
       suportsChatInput: true,
       suportsVideoInput: false,
       suportsScreenShare: false,
     },
-    customComponent: 'TeleprompterDemo',
   },
   'uninterruptable': {
     name: 'Uninterruptable Agent',

@@ -1,28 +1,36 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { Code, FileText, Copy, Check, Terminal } from '@phosphor-icons/react/dist/ssr';
+import { Code, FileText, Copy, Check, Terminal, PencilSimple, X, FloppyDisk } from '@phosphor-icons/react/dist/ssr';
 import { Button } from '@/components/ui/button';
 import { SyntaxHighlighter } from '@/components/syntax-highlighter';
 import { LogViewer } from '@/components/log-viewer';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import { cn } from '@/lib/utils';
+import CodeMirror from '@uiw/react-codemirror';
+import { python } from '@codemirror/lang-python';
+import { oneDark } from '@codemirror/theme-one-dark';
 
 interface CodePanelProps {
   agentPath?: string;
+  demoKey?: string;
+  isAppDemo?: boolean;
   className?: string;
 }
 
 type ViewMode = 'code' | 'readme' | 'logs';
 
-export function CodePanel({ agentPath, className }: CodePanelProps) {
+export function CodePanel({ agentPath, demoKey, isAppDemo, className }: CodePanelProps) {
   const [viewMode, setViewMode] = useState<ViewMode>('code');
   const [code, setCode] = useState<string>('');
   const [readme, setReadme] = useState<string>('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
+  const [isEditing, setIsEditing] = useState(false);
+  const [editedCode, setEditedCode] = useState<string>('');
+  const [saving, setSaving] = useState(false);
 
   // Fetch code when component mounts or agentPath changes
   useEffect(() => {
@@ -90,6 +98,45 @@ export function CodePanel({ agentPath, className }: CodePanelProps) {
     }
   };
 
+  const handleSaveCode = async () => {
+    if (!agentPath || !editedCode) return;
+    
+    setSaving(true);
+    setError(null);
+    
+    try {
+      console.log(`Saving code to ${agentPath} at ${new Date().toISOString()}`);
+      
+      const response = await fetch(`/api/agent-code?t=${Date.now()}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        cache: 'no-store',
+        body: JSON.stringify({
+          path: agentPath,
+          code: editedCode,
+        }),
+      });
+      
+      if (!response.ok) {
+        throw new Error('Failed to save code');
+      }
+      
+      const result = await response.json();
+      console.log(`Save completed at ${new Date().toISOString()}`, result);
+      
+      // Update the displayed code
+      setCode(editedCode);
+      setIsEditing(false);
+      setEditedCode('');
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to save code');
+    } finally {
+      setSaving(false);
+    }
+  };
+
   if (!agentPath) {
     return (
       <div className="flex items-center justify-center h-full text-muted-foreground">
@@ -109,25 +156,65 @@ export function CodePanel({ agentPath, className }: CodePanelProps) {
           <p className="text-sm text-muted-foreground">{agentPath}</p>
         </div>
         <div className="flex gap-2">
-          {viewMode === 'code' && code && (
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={handleCopyCode}
-              className="gap-2"
-            >
-              {copied ? (
-                <>
-                  <Check size={16} />
-                  Copied!
-                </>
-              ) : (
-                <>
-                  <Copy size={16} />
-                  Copy
-                </>
-              )}
-            </Button>
+          {viewMode === 'code' && code && !isEditing && (
+            <>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={handleCopyCode}
+                className="gap-2"
+              >
+                {copied ? (
+                  <>
+                    <Check size={16} />
+                    Copied!
+                  </>
+                ) : (
+                  <>
+                    <Copy size={16} />
+                    Copy
+                  </>
+                )}
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => {
+                  setIsEditing(true);
+                  setEditedCode(code);
+                }}
+                className="gap-2"
+              >
+                <PencilSimple size={16} />
+                Edit
+              </Button>
+            </>
+          )}
+          {viewMode === 'code' && isEditing && (
+            <>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => {
+                  setIsEditing(false);
+                  setEditedCode('');
+                }}
+                className="gap-2"
+              >
+                <X size={16} />
+                Cancel
+              </Button>
+              <Button
+                variant={editedCode.trim() !== code.trim() ? "primary" : "outline"}
+                size="sm"
+                onClick={handleSaveCode}
+                disabled={saving || editedCode.trim() === code.trim()}
+                className="gap-2"
+              >
+                <FloppyDisk size={16} />
+                {saving ? 'Saving...' : 'Save'}
+              </Button>
+            </>
           )}
           <Button
             variant={viewMode === 'code' ? 'default' : 'outline'}
@@ -161,7 +248,10 @@ export function CodePanel({ agentPath, className }: CodePanelProps) {
       
       {/* Content area */}
       {viewMode === 'logs' ? (
-        <LogViewer agentPath={agentPath} className="flex-1" />
+        <LogViewer 
+          agentPath={agentPath} 
+          className="flex-1" 
+        />
       ) : (
         <div className="flex-1 overflow-auto p-4">
           {loading && (
@@ -177,11 +267,33 @@ export function CodePanel({ agentPath, className }: CodePanelProps) {
           )}
           
           {!loading && !error && viewMode === 'code' && code && (
-            <div className="rounded-lg overflow-hidden">
-              <SyntaxHighlighter 
-                code={code} 
-                language="python"
-                className="text-sm !bg-[#2d2d2d] !m-0"
+            <div className="rounded-lg overflow-hidden h-full [&_.cm-editor]:h-full">
+              <CodeMirror
+                value={isEditing ? editedCode : code}
+                onChange={(value) => {
+                  if (isEditing) {
+                    setEditedCode(value);
+                  }
+                }}
+                theme={oneDark}
+                extensions={[python()]}
+                height="100%"
+                readOnly={!isEditing}
+                editable={isEditing}
+                basicSetup={{
+                  lineNumbers: true,
+                  foldGutter: true,
+                  dropCursor: isEditing,
+                  allowMultipleSelections: true,
+                  indentOnInput: isEditing,
+                  bracketMatching: true,
+                  closeBrackets: isEditing,
+                  autocompletion: isEditing,
+                  rectangularSelection: true,
+                  crosshairCursor: isEditing,
+                  highlightSelectionMatches: true,
+                  searchKeymap: true,
+                }}
               />
             </div>
           )}

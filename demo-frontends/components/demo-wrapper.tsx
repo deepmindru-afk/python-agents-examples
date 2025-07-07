@@ -25,6 +25,8 @@ interface DemoWrapperProps {
 
 export default function DemoWrapper({ demoKey, demo, appConfig }: DemoWrapperProps) {
   const [sessionStarted, setSessionStarted] = React.useState(false);
+  const [appDemoUrl, setAppDemoUrl] = React.useState<string | null>(null);
+  const [appDemoLoading, setAppDemoLoading] = React.useState(false);
   const { startButtonText } = appConfig;
 
   const connectionDetails = useDemoConnectionDetails({ 
@@ -33,6 +35,56 @@ export default function DemoWrapper({ demoKey, demo, appConfig }: DemoWrapperPro
   });
 
   const room = React.useMemo(() => new Room(), []);
+
+  // Start app demo if this is an app type demo
+  React.useEffect(() => {
+    if (demo.type !== 'app') return;
+
+    console.log(`Starting app demo: ${demoKey}`);
+    setAppDemoLoading(true);
+
+    const startAppDemo = async () => {
+      try {
+        const response = await fetch('/api/demos/app-demo/start', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ demoKey }),
+        });
+
+        if (!response.ok) {
+          const error = await response.json();
+          throw new Error(error.error || 'Failed to start app demo');
+        }
+
+        const { status } = await response.json();
+        if (status.url) {
+          setAppDemoUrl(status.url);
+        }
+      } catch (error) {
+        console.error('Failed to start app demo:', error);
+        toastAlert({
+          title: 'Failed to start app demo',
+          description: error instanceof Error ? error.message : 'Unknown error',
+        });
+      } finally {
+        setAppDemoLoading(false);
+      }
+    };
+
+    startAppDemo();
+
+    // Cleanup: stop app demo on unmount
+    return () => {
+      console.log(`Stopping app demo: ${demoKey}`);
+      fetch('/api/demos/app-demo/stop', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ demoKey }),
+      }).catch(error => {
+        console.error('Failed to stop app demo:', error);
+      });
+    };
+  }, [demo.type, demoKey]);
 
   // Start agent on component mount
   React.useEffect(() => {
@@ -119,6 +171,44 @@ export default function DemoWrapper({ demoKey, demo, appConfig }: DemoWrapperPro
     };
   }, [room, sessionStarted, connectionDetails]);
 
+  // Render app demo in iframe if it's an app type
+  if (demo.type === 'app') {
+    return (
+      <DemoLayout
+        codePanel={
+          <CodePanel 
+            agentPath={demo.agentPath} 
+            demoKey={demoKey}
+            isAppDemo={true}
+          />
+        }
+      >
+        <div className="relative h-full w-full">
+          {appDemoLoading && (
+            <div className="absolute inset-0 flex items-center justify-center bg-background/80">
+              <div className="text-center">
+                <div className="mb-4 h-8 w-8 animate-spin rounded-full border-2 border-primary border-t-transparent" />
+                <p className="text-sm text-muted-foreground">Starting app demo...</p>
+              </div>
+            </div>
+          )}
+          
+          {appDemoUrl && !appDemoLoading && (
+            <iframe
+              src={appDemoUrl}
+              className="h-full w-full border-0"
+              allow="camera; microphone"
+              title={`${demo.name} Demo`}
+            />
+          )}
+
+          <Toaster />
+        </div>
+      </DemoLayout>
+    );
+  }
+
+  // Standard component demo rendering
   return (
     <DemoLayout
       codePanel={<CodePanel agentPath={demo.agentPath} />}
