@@ -1,3 +1,14 @@
+"""
+---
+title: Tavus Avatar
+category: avatars
+tags: [avatar, openai, deepgram, tavus]
+difficulty: intermediate
+description: Shows how to create a tavus avatar.
+demonstrates:
+  - Creating a new tavus avatar session
+---
+"""
 import logging
 import json
 import uuid
