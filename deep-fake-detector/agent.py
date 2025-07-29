@@ -58,11 +58,15 @@ class ParticipantData:
 
 class DeepFakeDetectionAgent(Agent):
     def __init__(self) -> None:
+        logger.info("Initializing DeepFakeDetectionAgent")
+        
         self._participants: Dict[str, ParticipantData] = {}
         self._detection_results: list[DetectionResult] = []
         self._monitoring_tasks: list[asyncio.Task] = []
         self._analysis_interval = 2.0  # Analyze frames every 2 seconds
         self._detection_cooldown = 30.0  # Don't report same participant for 30 seconds
+        
+        logger.info(f"Agent configuration: analysis_interval={self._analysis_interval}s, detection_cooldown={self._detection_cooldown}s")
         
         super().__init__(
             instructions="""
@@ -82,33 +86,57 @@ class DeepFakeDetectionAgent(Agent):
             llm=openai.LLM.with_x_ai(model="grok-2-vision", tool_choice=None),
             vad=silero.VAD.load()
         )
+        
+        logger.info("DeepFakeDetectionAgent initialization complete")
 
     async def on_enter(self):
         """Initialize monitoring when agent enters the room."""
         room = get_job_context().room
+        logger.info(f"Deep fake detection agent entering room: {room.name}")
         
         # Monitor existing participants
+        logger.info(f"Found {len(room.remote_participants)} existing participants")
         for participant_id, participant in room.remote_participants.items():
+            logger.info(f"Starting monitoring for existing participant: {participant.name or participant.identity}")
             await self._start_monitoring_participant(participant)
         
         # Watch for new participants
         @room.on("participant_connected")
-        async def on_participant_connected(participant: rtc.RemoteParticipant):
-            await self._start_monitoring_participant(participant)
+        def on_participant_connected(participant: rtc.RemoteParticipant):
+            async def handle_participant_connected():
+                logger.info(f"New participant connected: {participant.name or participant.identity}")
+                await self._start_monitoring_participant(participant)
+            asyncio.create_task(handle_participant_connected())
         
         # Watch for participant disconnections
         @room.on("participant_disconnected")
-        async def on_participant_disconnected(participant: rtc.RemoteParticipant):
-            await self._stop_monitoring_participant(participant.identity)
+        def on_participant_disconnected(participant: rtc.RemoteParticipant):
+            async def handle_participant_disconnected():
+                logger.info(f"Participant disconnected: {participant.name or participant.identity}")
+                await self._stop_monitoring_participant(participant.identity)
+            asyncio.create_task(handle_participant_disconnected())
         
         # Watch for new video tracks
         @room.on("track_subscribed")
         def on_track_subscribed(track: rtc.Track, publication: rtc.RemoteTrackPublication, participant: rtc.RemoteParticipant):
+            logger.info(f"Track subscribed: {track.kind} from {participant.name or participant.identity}")
             if track.kind == rtc.TrackKind.KIND_VIDEO:
+                logger.info(f"Video track subscribed for {participant.name or participant.identity}")
+                # Check if participant is already being monitored
+                if participant.identity in self._participants:
+                    logger.info(f"Participant {participant.identity} already in monitoring list, creating video stream")
+                else:
+                    logger.info(f"Participant {participant.identity} not yet in monitoring list, will be added during video stream creation")
                 self._create_video_stream(track, participant)
+            else:
+                logger.debug(f"Non-video track subscribed: {track.kind}")
+        
+        logger.info("Deep fake detection agent initialization complete")
 
     async def _start_monitoring_participant(self, participant: rtc.RemoteParticipant):
         """Start monitoring a new participant."""
+        logger.info(f"Starting monitoring for participant: {participant.name or participant.identity}")
+        
         participant_data = ParticipantData(
             participant_id=participant.identity,
             participant_name=participant.name or participant.identity
@@ -121,8 +149,13 @@ class DeepFakeDetectionAgent(Agent):
             for publication in list(participant.track_publications.values())
             if publication.track and publication.track.kind == rtc.TrackKind.KIND_VIDEO
         ]
+        
+        logger.info(f"Found {len(video_tracks)} existing video tracks for {participant.name or participant.identity}")
         if video_tracks:
+            logger.info(f"Creating video stream for existing video track from {participant.name or participant.identity}")
             self._create_video_stream(video_tracks[0], participant)
+        else:
+            logger.info(f"No existing video tracks found for {participant.name or participant.identity}, waiting for track subscription")
         
         logger.info(f"Started monitoring participant: {participant.name or participant.identity}")
 
@@ -139,63 +172,89 @@ class DeepFakeDetectionAgent(Agent):
     def _create_video_stream(self, track: rtc.Track, participant: rtc.RemoteParticipant):
         """Create a video stream for monitoring."""
         participant_id = participant.identity
-        if participant_id not in self._participants:
-            return
+        logger.info(f"Creating video stream for participant {participant_id} ({participant.name or participant.identity})")
         
-        participant_data = self._participants[participant_id]
+        if participant_id not in self._participants:
+            logger.info(f"Participant {participant_id} not found in participants dict, adding them now")
+            # Add the participant to the dict if they're not there yet
+            participant_data = ParticipantData(
+                participant_id=participant.identity,
+                participant_name=participant.name or participant.identity
+            )
+            self._participants[participant.identity] = participant_data
+        else:
+            participant_data = self._participants[participant_id]
         
         # Close any existing stream
         if participant_data.video_stream is not None:
+            logger.debug(f"Closing existing video stream for {participant_id}")
             participant_data.video_stream.close()
         
         # Create a new stream to receive frames
         participant_data.video_stream = rtc.VideoStream(track)
         participant_data.is_monitoring = True
         
+        logger.info(f"Created video stream for {participant_id}, starting monitoring task")
+        
         # Start the monitoring task
         task = asyncio.create_task(self._monitor_participant_frames(participant_id))
         task.add_done_callback(lambda t: self._monitoring_tasks.remove(t) if t in self._monitoring_tasks else None)
         self._monitoring_tasks.append(task)
         
-        logger.info(f"Created video stream for participant: {participant.name or participant.identity}")
+        logger.info(f"Successfully created video stream and started monitoring for participant: {participant.name or participant.identity}")
 
     async def _monitor_participant_frames(self, participant_id: str):
         """Monitor frames from a participant for deep fake detection."""
         if participant_id not in self._participants:
+            logger.warning(f"Participant {participant_id} not found in participants dict")
             return
         
         participant_data = self._participants[participant_id]
         if not participant_data.video_stream:
+            logger.warning(f"No video stream for participant {participant_id}")
             return
         
+        logger.info(f"Starting frame monitoring for participant {participant_id} ({participant_data.participant_name})")
         last_analysis_time = 0
+        frame_count = 0
         
         try:
             async for event in participant_data.video_stream:
                 if not participant_data.is_monitoring:
+                    logger.info(f"Monitoring stopped for participant {participant_id}")
                     break
                 
+                frame_count += 1
                 current_time = time.time()
                 participant_data.last_frame_time = current_time
+                
+                # Log frame reception periodically
+                if frame_count % 30 == 0:  # Log every 30 frames
+                    logger.debug(f"Received frame {frame_count} from {participant_id} at {current_time}")
                 
                 # Analyze frames at regular intervals
                 if current_time - last_analysis_time >= self._analysis_interval:
                     last_analysis_time = current_time
+                    logger.info(f"Analyzing frame {frame_count} for participant {participant_id} ({participant_data.participant_name})")
                     await self._analyze_frame(event.frame, participant_data)
                     
         except Exception as e:
             logger.error(f"Error monitoring frames for participant {participant_id}: {e}")
         finally:
+            logger.info(f"Frame monitoring ended for participant {participant_id}. Total frames processed: {frame_count}")
             if participant_data.video_stream:
                 participant_data.video_stream.close()
 
     async def _analyze_frame(self, frame, participant_data: ParticipantData):
         """Analyze a video frame for deep fake detection."""
         try:
+            logger.debug(f"Starting frame analysis for {participant_data.participant_name}")
+            
             # Check if we should skip analysis due to cooldown
             current_time = time.time()
             if (participant_data.last_detection_time and 
                 current_time - participant_data.last_detection_time < self._detection_cooldown):
+                logger.debug(f"Skipping analysis for {participant_data.participant_name} due to cooldown")
                 return
             
             # Create a message with the frame for analysis
@@ -204,7 +263,7 @@ class DeepFakeDetectionAgent(Agent):
                 role="user",
                 content=[
                     "Analyze this video frame for signs of AI-generated content, deep fakes, or bot behavior. " +
-                    "Look for unnatural facial movements, inconsistent lighting, artifacts, unrealistic features, " +
+                    "Look for unnatural facialial expressions, inconsistent lighting, artifacts, unrealistic features, " +
                     "or any other indicators of synthetic content. " +
                     "Respond with 'DETECTION: AI_BOT' or 'DETECTION: DEEP_FAKE' followed by confidence level (0-100) " +
                     "and details if you detect something suspicious, otherwise respond with 'NO_DETECTION'."
@@ -212,22 +271,39 @@ class DeepFakeDetectionAgent(Agent):
             )
             analysis_message.content.append(ImageContent(image=frame))
             
-            # Get analysis from LLM
-            response = await self.llm.chat([analysis_message])
-            response_text = response.content[0].text.strip()
+            # Create chat context
+            chat_ctx = ChatContext([analysis_message])
             
-            # Always send analysis results to chat
-            await self._send_analysis_result(participant_data, response_text)
+            logger.debug(f"Sending frame to LLM for analysis for {participant_data.participant_name}")
+            
+            # Get analysis from LLM
+            response_text = ""
+            async with self.llm.chat(chat_ctx=chat_ctx) as stream:
+                async for chunk in stream:
+                    if not chunk:
+                        continue
+                    content = getattr(chunk.delta, 'content', None) if hasattr(chunk, 'delta') else str(chunk)
+                    if content:
+                        response_text += content
+            
+            response_text = response_text.strip()
+            logger.info(f"LLM response for {participant_data.participant_name}: {response_text}")
+            
+            # # Always send analysis results to chat
+            # await self._send_analysis_result(participant_data, response_text)
             
             # Parse the response for detections
             if response_text.startswith("DETECTION:"):
+                logger.info(f"Detection found for {participant_data.participant_name}: {response_text}")
                 await self._handle_detection(response_text, participant_data, frame)
             elif "NO_DETECTION" not in response_text:
                 # If response is unclear, log it for debugging
                 logger.debug(f"Unclear analysis response for {participant_data.participant_name}: {response_text}")
                 
         except Exception as e:
-            logger.error(f"Error analyzing frame for {participant_data.participant_name}: {e}")
+            logger.error(f"Error analyzing frame for {participant_data.participant_name}, error: {e}")
+            import traceback
+            logger.error(f"Full traceback: {traceback.format_exc()}")
 
     async def _handle_detection(self, response_text: str, participant_data: ParticipantData, frame):
         """Handle a detection result."""
@@ -251,9 +327,11 @@ class DeepFakeDetectionAgent(Agent):
                 if match:
                     confidence = float(match.group(1))
             
-            # Only report if confidence is high enough
-            if confidence < 70:
-                return
+            logger.info(f"Detection: {detection_type} detected for {participant_data.participant_name} with {confidence}% confidence")
+
+            # # Only report if confidence is high enough
+            # if confidence < 70:
+            #     return
             
             # Create detection result
             detection = DetectionResult(
@@ -280,6 +358,7 @@ class DeepFakeDetectionAgent(Agent):
     async def _send_analysis_result(self, participant_data: ParticipantData, analysis_text: str):
         """Send analysis results to the chat."""
         try:
+            logger.debug(f"Sending analysis result to chat for {participant_data.participant_name}")
             room = get_job_context().room
             
             # Create analysis message
@@ -291,10 +370,14 @@ class DeepFakeDetectionAgent(Agent):
             )
             
             # Send to chat
-            await room.local_participant.send_chat_message(analysis_message)
+            logger.info(f"Sending analysis result to chat: {analysis_message}")
+            await room.local_participant.send_text(analysis_message, topic="lk.chat")
+            logger.debug(f"Successfully sent analysis result to chat for {participant_data.participant_name}")
             
         except Exception as e:
             logger.error(f"Error sending analysis result: {e}")
+            import traceback
+            logger.error(f"Full traceback: {traceback.format_exc()}")
 
     async def _send_detection_notification(self, detection: DetectionResult):
         """Send a detection notification to the chat."""
@@ -311,26 +394,8 @@ class DeepFakeDetectionAgent(Agent):
             )
             
             # Send to chat
-            await room.local_participant.send_chat_message(notification_text)
-            
-            # Also send via RPC to any connected clients
-            for participant in room.remote_participants.values():
-                try:
-                    await room.local_participant.perform_rpc(
-                        destination_identity=participant.identity,
-                        method="client.detection_alert",
-                        payload=json.dumps({
-                            "type": "detection",
-                            "detection_type": detection.detection_type,
-                            "participant_name": detection.participant_name,
-                            "confidence": detection.confidence,
-                            "timestamp": detection.timestamp.isoformat(),
-                            "detection_id": len(self._detection_results)
-                        })
-                    )
-                except Exception as e:
-                    logger.error(f"Error sending RPC notification to {participant.identity}: {e}")
-                    
+            logger.info(f"detection notification: {notification_text}")
+            await room.local_participant.send_text(notification_text, topic="lk.chat")
         except Exception as e:
             logger.error(f"Error sending detection notification: {e}")
 
