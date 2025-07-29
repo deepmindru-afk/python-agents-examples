@@ -1,3 +1,16 @@
+"""
+---
+title: MCP Agent
+category: mcp
+tags: [mcp, openai, deepgram]
+difficulty: beginner
+description: Shows how to use a LiveKit Agent as an MCP client.
+demonstrates:
+  - Connecting to a local MCP server as a client.
+  - Connecting to a remote MCP server as a client.
+  - Using a function tool to retrieve data from the MCP server.
+---
+"""
 import logging
 import os
 from dotenv import load_dotenv

@@ -1,3 +1,15 @@
+"""
+---
+title: ElevenLabs Change Language
+category: pipeline-tts
+tags: [pipeline-tts, openai, deepgram]
+difficulty: intermediate
+description: Shows how to use the ElevenLabs TTS model to change the language of the agent.
+demonstrates:
+  - Using the `tts.update_options` method to change the language of the agent.
+  - Allowing agents to self-update their own options using function tools.
+---
+"""
 import logging
 from pathlib import Path
 from dotenv import load_dotenv

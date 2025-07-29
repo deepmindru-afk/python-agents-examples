@@ -1,3 +1,15 @@
+"""
+---
+title: TTS Comparison
+category: pipeline-tts
+tags: [pipeline-tts, openai, deepgram]
+difficulty: intermediate
+description: Switches between different TTS providers using function tools.
+demonstrates:
+  - Using function tools to switch between different TTS providers.
+  - Each function tool returns a new agent with the same instructions, but with a different TTS provider.
+---
+"""
 import logging
 from pathlib import Path
 from dotenv import load_dotenv

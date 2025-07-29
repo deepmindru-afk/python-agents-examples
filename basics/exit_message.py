@@ -4,7 +4,7 @@ title: Exit Message
 category: basics
 tags: [exit, message, openai, deepgram]
 difficulty: beginner
-description: Shows how to create an agent that can say goodbye.
+description: Shows how to use the `on_exit` method to take an action when the agent exits.
 demonstrates:
   - Use the `on_exit` method to take an action when the agent exits
 ---

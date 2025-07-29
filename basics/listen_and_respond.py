@@ -1,3 +1,15 @@
+"""
+---
+title: Listen and Respond
+category: basics
+tags: [listen, respond, openai, deepgram]
+difficulty: beginner
+description: Shows how to create an agent that can listen to the user and respond.
+demonstrates:
+  - This is the most basic agent that can listen to the user and respond. This is a good starting point for any agent.
+---
+"""
+
 import logging
 import os
 from pathlib import Path

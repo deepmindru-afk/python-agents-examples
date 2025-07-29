@@ -1,5 +1,15 @@
-# Transcribes user speech to text, and saves it to a file
-
+"""
+---
+title: Transcriber
+category: pipeline-stt
+tags: [pipeline-stt, openai, deepgram]
+difficulty: beginner
+description: Shows how to transcribe user speech to text without TTS or an LLM.
+demonstrates:
+  - Saving transcripts to a file.
+  - An Agent that does not have TTS or an LLM. This is STT only.
+---
+"""
 from pathlib import Path
 from dotenv import load_dotenv
 from livekit.agents import JobContext, WorkerOptions, cli

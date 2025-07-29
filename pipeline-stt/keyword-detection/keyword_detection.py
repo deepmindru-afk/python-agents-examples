@@ -1,3 +1,15 @@
+"""
+---
+title: Keyword Detection
+category: pipeline-stt
+tags: [pipeline-stt, openai, deepgram]
+difficulty: intermediate
+description: Shows how to detect keywords in user speech.
+demonstrates:
+  - If the user says a keyword, the agent will log the keyword to the console.
+  - Using the `stt_node` method to override the default STT node and add custom logic to detect keywords.
+---
+"""
 import logging
 from pathlib import Path
 from typing import AsyncIterable, Optional
