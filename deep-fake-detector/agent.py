@@ -119,17 +119,19 @@ class DeepFakeDetectionAgent(Agent):
         # Watch for new video tracks
         @room.on("track_subscribed")
         def on_track_subscribed(track: rtc.Track, publication: rtc.RemoteTrackPublication, participant: rtc.RemoteParticipant):
-            logger.info(f"Track subscribed: {track.kind} from {participant.name or participant.identity}")
-            if track.kind == rtc.TrackKind.KIND_VIDEO:
-                logger.info(f"Video track subscribed for {participant.name or participant.identity}")
-                # Check if participant is already being monitored
-                if participant.identity in self._participants:
-                    logger.info(f"Participant {participant.identity} already in monitoring list, creating video stream")
+            async def handle_track_subscribed():
+                logger.info(f"Track subscribed: {track.kind} from {participant.name or participant.identity}")
+                if track.kind == rtc.TrackKind.KIND_VIDEO:
+                    logger.info(f"Video track subscribed for {participant.name or participant.identity}")
+                    # Check if participant is already being monitored
+                    if participant.identity in self._participants:
+                        logger.info(f"Participant {participant.identity} already in monitoring list, creating video stream")
+                    else:
+                        logger.info(f"Participant {participant.identity} not yet in monitoring list, will be added during video stream creation")
+                    await self._create_video_stream(track, participant)
                 else:
-                    logger.info(f"Participant {participant.identity} not yet in monitoring list, will be added during video stream creation")
-                self._create_video_stream(track, participant)
-            else:
-                logger.debug(f"Non-video track subscribed: {track.kind}")
+                    logger.debug(f"Non-video track subscribed: {track.kind}")
+            asyncio.create_task(handle_track_subscribed())
         
         logger.info("Deep fake detection agent initialization complete")
 
@@ -153,7 +155,7 @@ class DeepFakeDetectionAgent(Agent):
         logger.info(f"Found {len(video_tracks)} existing video tracks for {participant.name or participant.identity}")
         if video_tracks:
             logger.info(f"Creating video stream for existing video track from {participant.name or participant.identity}")
-            self._create_video_stream(video_tracks[0], participant)
+            await self._create_video_stream(video_tracks[0], participant)
         else:
             logger.info(f"No existing video tracks found for {participant.name or participant.identity}, waiting for track subscription")
         
@@ -164,12 +166,12 @@ class DeepFakeDetectionAgent(Agent):
         if participant_id in self._participants:
             participant_data = self._participants[participant_id]
             if participant_data.video_stream:
-                participant_data.video_stream.close()
+                await participant_data.video_stream.aclose()
             participant_data.is_monitoring = False
             del self._participants[participant_id]
             logger.info(f"Stopped monitoring participant: {participant_id}")
 
-    def _create_video_stream(self, track: rtc.Track, participant: rtc.RemoteParticipant):
+    async def _create_video_stream(self, track: rtc.Track, participant: rtc.RemoteParticipant):
         """Create a video stream for monitoring."""
         participant_id = participant.identity
         logger.info(f"Creating video stream for participant {participant_id} ({participant.name or participant.identity})")
@@ -188,7 +190,7 @@ class DeepFakeDetectionAgent(Agent):
         # Close any existing stream
         if participant_data.video_stream is not None:
             logger.debug(f"Closing existing video stream for {participant_id}")
-            participant_data.video_stream.close()
+            await participant_data.video_stream.aclose()
         
         # Create a new stream to receive frames
         participant_data.video_stream = rtc.VideoStream(track)
@@ -243,7 +245,7 @@ class DeepFakeDetectionAgent(Agent):
         finally:
             logger.info(f"Frame monitoring ended for participant {participant_id}. Total frames processed: {frame_count}")
             if participant_data.video_stream:
-                participant_data.video_stream.close()
+                await participant_data.video_stream.aclose()
 
     async def _analyze_frame(self, frame, participant_data: ParticipantData):
         """Analyze a video frame for deep fake detection."""
@@ -450,11 +452,15 @@ class DeepFakeDetectionAgent(Agent):
 
     async def on_exit(self):
         """Clean up when agent exits."""
-        # Stop all monitoring tasks
-        for participant_data in self._participants.values():
+        # Stop all monitoring tasks - create a copy to avoid modification during iteration
+        participants_to_cleanup = list(self._participants.values())
+        for participant_data in participants_to_cleanup:
             if participant_data.video_stream:
-                participant_data.video_stream.close()
+                await participant_data.video_stream.aclose()
             participant_data.is_monitoring = False
+        
+        # Clear the participants dictionary
+        self._participants.clear()
         
         # Cancel monitoring tasks
         for task in self._monitoring_tasks:
