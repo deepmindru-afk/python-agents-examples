@@ -107,4 +107,15 @@ export const demos: Record<string, DemoConfig> = {
       suportsScreenShare: false,
     },
   },
+  'deep-fake-detector': {
+    name: 'Deep Fake Detector',
+    description: 'Monitor video streams for AI bots and deep fake detection',
+    tags: ['Vision', 'Monitoring', 'Security'],
+    agentPath: '/deep-fake-detector/agent.py',
+    capabilities: {
+      suportsChatInput: true,
+      suportsVideoInput: true,
+      suportsScreenShare: true,
+    },
+  },
 };
