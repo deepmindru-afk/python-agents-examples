@@ -25,7 +25,7 @@ from datetime import datetime
 
 from dotenv import load_dotenv
 from livekit import rtc
-from livekit.agents import JobContext, WorkerOptions, cli, get_job_context
+from livekit.agents import JobContext, WorkerOptions, cli, get_job_context, RoomOutputOptions
 from livekit.agents.llm import function_tool, ImageContent, ChatContext, ChatMessage
 from livekit.agents.voice import Agent, AgentSession, RunContext
 from livekit.plugins import deepgram, openai, silero, rime
@@ -69,6 +69,7 @@ class DeepFakeDetectionAgent(Agent):
                 You are a deep fake detection agent that monitors video streams for AI bots and deep fakes.
                 You can see video frames from participants and analyze them for signs of AI-generated content.
                 When you detect potential AI bots or deep fakes, you will send notifications to the chat.
+                You are a silent monitoring agent. Do not speak or respond to voice commands.
                 
                 Focus on detecting:
                 - Unnatural facial movements or expressions
@@ -77,12 +78,8 @@ class DeepFakeDetectionAgent(Agent):
                 - Unrealistic skin texture or features
                 - Synchronization issues between audio and video
                 - Repetitive or mechanical behaviors
-                
-                Be cautious and only report when you have high confidence in your detection.
             """,
-            stt=deepgram.STT(),
             llm=openai.LLM.with_x_ai(model="grok-2-vision", tool_choice=None),
-            tts=rime.TTS(),
             vad=silero.VAD.load()
         )
 
@@ -219,7 +216,10 @@ class DeepFakeDetectionAgent(Agent):
             response = await self.llm.chat([analysis_message])
             response_text = response.content[0].text.strip()
             
-            # Parse the response
+            # Always send analysis results to chat
+            await self._send_analysis_result(participant_data, response_text)
+            
+            # Parse the response for detections
             if response_text.startswith("DETECTION:"):
                 await self._handle_detection(response_text, participant_data, frame)
             elif "NO_DETECTION" not in response_text:
@@ -276,6 +276,25 @@ class DeepFakeDetectionAgent(Agent):
             
         except Exception as e:
             logger.error(f"Error handling detection: {e}")
+
+    async def _send_analysis_result(self, participant_data: ParticipantData, analysis_text: str):
+        """Send analysis results to the chat."""
+        try:
+            room = get_job_context().room
+            
+            # Create analysis message
+            timestamp = datetime.now().strftime('%H:%M:%S')
+            analysis_message = (
+                f"🔍 **Frame Analysis** - {participant_data.participant_name}\n"
+                f"Time: {timestamp}\n"
+                f"Result: {analysis_text}"
+            )
+            
+            # Send to chat
+            await room.local_participant.send_chat_message(analysis_message)
+            
+        except Exception as e:
+            logger.error(f"Error sending analysis result: {e}")
 
     async def _send_detection_notification(self, detection: DetectionResult):
         """Send a detection notification to the chat."""
@@ -383,7 +402,12 @@ async def entrypoint(ctx: JobContext):
 
     await session.start(
         agent=DeepFakeDetectionAgent(),
-        room=ctx.room
+        room=ctx.room,
+        room_output_options=RoomOutputOptions(
+            transcription_enabled=False,
+            # disable audio output if it's not needed
+            audio_enabled=False,
+        ),
     )
 
 if __name__ == "__main__":

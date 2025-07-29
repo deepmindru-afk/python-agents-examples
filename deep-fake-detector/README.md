@@ -1,6 +1,6 @@
 # Deep Fake Detection Agent
 
-A LiveKit agent that monitors video streams in real-time to detect AI bots and deep fakes, sending alerts to the chat when suspicious content is identified.
+A silent LiveKit monitoring agent that analyzes video streams in real-time to detect AI bots and deep fakes, sending alerts to the chat when suspicious content is identified. The agent operates silently in the background without speaking or responding to voice commands.
 
 ## Features
 
@@ -11,6 +11,7 @@ A LiveKit agent that monitors video streams in real-time to detect AI bots and d
 - **Detection Statistics**: Tracks and reports detection statistics
 - **Cooldown System**: Prevents spam by implementing detection cooldowns
 - **Multi-Participant Support**: Monitors all participants in the room simultaneously
+- **Silent Operation**: Operates silently in the background without speaking or responding to voice commands
 
 ## Detection Capabilities
 
@@ -52,6 +53,8 @@ Or deploy to LiveKit Cloud:
 ```bash
 python agent.py deploy
 ```
+
+**Note**: The agent operates silently in the background. It will not speak or respond to voice commands, only send detection alerts via chat messages and RPC notifications.
 
 ### Function Tools
 

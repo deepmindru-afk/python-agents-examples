@@ -2,7 +2,7 @@
 
 ## What Was Created
 
-A comprehensive LiveKit agent that monitors video streams in real-time to detect AI bots and deep fakes. The agent provides:
+A silent LiveKit monitoring agent that analyzes video streams in real-time to detect AI bots and deep fakes. The agent operates silently in the background without speaking or responding to voice commands, providing:
 
 ### Core Features
 - **Real-time Video Monitoring**: Continuously monitors all participants' video streams
@@ -11,6 +11,7 @@ A comprehensive LiveKit agent that monitors video streams in real-time to detect
 - **RPC Integration**: Provides detection alerts via RPC for client-side integration
 - **Detection Statistics**: Tracks and reports detection statistics
 - **Cooldown System**: Prevents spam with configurable detection cooldowns
+- **Silent Operation**: Operates silently in the background without speaking or responding to voice commands
 
 ### Detection Capabilities
 The agent looks for various indicators of AI-generated or deep fake content:
@@ -110,7 +111,7 @@ The agent has been added to the demo frontend configuration and will appear as:
 - **Name**: Deep Fake Detector
 - **Description**: Monitor video streams for AI bots and deep fake detection
 - **Tags**: Vision, Monitoring, Security
-- **Capabilities**: Supports chat input, video input, and screen share
+- **Capabilities**: Supports video input and screen share (silent monitoring only)
 
 ## Architecture
 
