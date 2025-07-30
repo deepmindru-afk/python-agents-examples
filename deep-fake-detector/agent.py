@@ -65,26 +65,35 @@ class DeepFakeDetectionAgent(Agent):
         self._monitoring_tasks: list[asyncio.Task] = []
         self._analysis_interval = 2.0  # Analyze frames every 2 seconds
         self._detection_cooldown = 30.0  # Don't report same participant for 30 seconds
+        self._confidence_threshold = 70.0  # Minimum confidence to report detections
         
-        logger.info(f"Agent configuration: analysis_interval={self._analysis_interval}s, detection_cooldown={self._detection_cooldown}s")
+        logger.info(f"Agent configuration: analysis_interval={self._analysis_interval}s, detection_cooldown={self._detection_cooldown}s, confidence_threshold={self._confidence_threshold}%")
         
         super().__init__(
             instructions="""
-                You are a deep fake detection agent that monitors video streams for AI bots and deep fakes.
-                You will recieve video clips from participants.
-                Analyze these video clips for signs of AI-generated content, deep fakes, or bot behavior.
-                Respond with 'DETECTION: AI_BOT' or 'DETECTION: DEEP_FAKE' followed by confidence level (0-100) and details if you detect something suspicious, otherwise respond with 'NO_DETECTION'.
-                Do not include any other text in your response.
+                You are a security monitoring system designed to detect AI-generated content and deep fakes in video streams. This is for legitimate security purposes to protect against fraud and misinformation.
                 
-                Focus on detecting:
-                - Unnatural facial movements or expressions
-                - Inconsistent lighting or shadows
-                - Artifacts around the face or body
-                - Unrealistic skin texture or features
+                You will receive video frames from participants and analyze them for signs of AI-generated content, deep fakes, or bot behavior.
+                
+                IMPORTANT: Be conservative but thorough in your analysis. Most real webcam video should be classified as legitimate, but be alert for clear signs of AI generation or deep fake technology.
+                
+                Response format: 
+                - For detections: 'DETECTION: AI_BOT' or 'DETECTION: DEEP_FAKE' followed by 'Confidence: [0-100]' and details
+                - For no detection: 'NO_DETECTION'
+                
+                Detect deep fakes if you see evidence of:
+                - Facial artifacts, glitches, or unnatural distortions
+                - Facial movements that don't match speech or expressions
+                - Signs of face swapping or manipulation
+                - AI-generated features or textures
+                - Unnatural skin texture or lighting inconsistencies
                 - Synchronization issues between audio and video
-                - Repetitive or mechanical behaviors
+                
+                Normal webcam quality issues, minor compression artifacts, or lighting variations should generally NOT be flagged as deep fakes unless they are clearly artificial.
+                
+                This analysis is for security monitoring purposes only.
             """,
-            llm=google.LLM(model="gemini-2.5-flash-lite", tool_choice=None),
+            llm=google.LLM(model="gemini-2.5-flash-lite"),
             vad=silero.VAD.load()
         )
         
@@ -253,6 +262,11 @@ class DeepFakeDetectionAgent(Agent):
         try:
             logger.debug(f"Starting frame analysis for {participant_data.participant_name}")
             
+            # Validate frame
+            if frame is None:
+                logger.warning(f"Received None frame for {participant_data.participant_name}, skipping analysis")
+                return
+            
             # Check if we should skip analysis due to cooldown
             current_time = time.time()
             if (participant_data.last_detection_time and 
@@ -260,17 +274,32 @@ class DeepFakeDetectionAgent(Agent):
                 logger.debug(f"Skipping analysis for {participant_data.participant_name} due to cooldown")
                 return
             
-            # Create a message with the frame for analysis
-            analysis_message = ChatMessage(
-                type="message",
-                role="user",
-                content=[ImageContent(image=frame)]
-            )
+            # Create a message with the frame for analysis and instructions
+            try:
+                image_content = ImageContent(image=frame)
+                analysis_message = ChatMessage(
+                    type="message",
+                    role="user",
+                    content=["Analyze this video frame for deep fake detection. Be conservative but thorough - flag if you are 70%+ confident of AI/deep fake signs. Respond with 'DETECTION: AI_BOT' or 'DETECTION: DEEP_FAKE' followed by 'Confidence: [0-100]' and details, or 'NO_DETECTION'.", image_content]
+                )
+                logger.debug(f"Successfully created analysis message for {participant_data.participant_name}")
+            except Exception as e:
+                logger.error(f"Error creating analysis message for {participant_data.participant_name}: {e}")
+                return
             
-            # Create chat context
-            chat_ctx = ChatContext([analysis_message])
+            # Create chat context with just the user message
+            try:
+                chat_ctx = ChatContext([analysis_message])
+                logger.debug(f"Successfully created chat context for {participant_data.participant_name}")
+            except Exception as e:
+                logger.error(f"Error creating chat context for {participant_data.participant_name}: {e}")
+                return
             
             logger.debug(f"Sending frame to LLM for analysis for {participant_data.participant_name}")
+            
+            # Debug: Log chat context details
+            logger.debug(f"Chat context created successfully for {participant_data.participant_name}")
+            logger.debug(f"Analysis message: role={analysis_message.role}, type={analysis_message.type}")
             
             # Get analysis from LLM
             response_text = ""
@@ -289,14 +318,13 @@ class DeepFakeDetectionAgent(Agent):
             response_text = response_text.strip()
             logger.info(f"LLM response for {participant_data.participant_name}: {response_text}")
             
-            # # Always send analysis results to chat
-            # await self._send_analysis_result(participant_data, response_text)
-            
             # Parse the response for detections
             if response_text.startswith("DETECTION:"):
                 logger.info(f"Detection found for {participant_data.participant_name}: {response_text}")
                 await self._handle_detection(response_text, participant_data, frame)
-            elif "NO_DETECTION" not in response_text:
+            elif "NO_DETECTION" in response_text:
+                logger.debug(f"No detection for {participant_data.participant_name}")
+            else:
                 # If response is unclear, log it for debugging
                 logger.debug(f"Unclear analysis response for {participant_data.participant_name}: {response_text}")
                 
@@ -309,29 +337,32 @@ class DeepFakeDetectionAgent(Agent):
         """Handle a detection result."""
         try:
             # Parse detection type and confidence
-            parts = response_text.split()
-            if len(parts) < 3:
+            if not response_text.startswith("DETECTION:"):
                 return
             
-            detection_type = parts[1]  # AI_BOT or DEEP_FAKE
-            confidence_str = parts[2]
+            # Extract detection type (AI_BOT or DEEP_FAKE)
+            if "DETECTION: AI_BOT" in response_text:
+                detection_type = "AI_BOT"
+            elif "DETECTION: DEEP_FAKE" in response_text:
+                detection_type = "DEEP_FAKE"
+            else:
+                return
             
-            # Extract confidence level
-            confidence = 0.0
-            try:
-                confidence = float(confidence_str)
-            except ValueError:
-                # Try to extract number from string like "confidence: 85"
-                import re
-                match = re.search(r'(\d+(?:\.\d+)?)', confidence_str)
-                if match:
-                    confidence = float(match.group(1))
+            # Extract confidence level using regex
+            import re
+            confidence_match = re.search(r'Confidence:\s*(\d+(?:\.\d+)?)', response_text)
+            if not confidence_match:
+                logger.warning(f"Could not extract confidence from response: {response_text}")
+                return
+            
+            confidence = float(confidence_match.group(1))
             
             logger.info(f"Detection: {detection_type} detected for {participant_data.participant_name} with {confidence}% confidence")
 
-            # # Only report if confidence is high enough
-            # if confidence < 70:
-            #     return
+            # Only report if confidence is high enough (reduce false positives)
+            if confidence < self._confidence_threshold:
+                logger.info(f"Skipping detection for {participant_data.participant_name} due to low confidence ({confidence}%)")
+                return
             
             # Create detection result
             detection = DetectionResult(
@@ -354,6 +385,8 @@ class DeepFakeDetectionAgent(Agent):
             
         except Exception as e:
             logger.error(f"Error handling detection: {e}")
+            import traceback
+            logger.error(f"Full traceback: {traceback.format_exc()}")
 
     async def _send_analysis_result(self, participant_data: ParticipantData, analysis_text: str):
         """Send analysis results to the chat."""
@@ -431,6 +464,55 @@ class DeepFakeDetectionAgent(Agent):
         return stats
 
     @function_tool
+    async def show_recent_analyses(self, context: RunContext) -> str:
+        """Show recent analysis results (last 10) to help with debugging."""
+        if not self._detection_results:
+            return "No detection results available yet."
+        
+        recent = self._detection_results[-10:] if len(self._detection_results) >= 10 else self._detection_results
+        
+        result = "**Recent Detection Results:**\n"
+        for i, detection in enumerate(recent, 1):
+            result += f"{i}. **{detection.detection_type.upper()}** - {detection.participant_name}\n"
+            result += f"   Confidence: {detection.confidence:.1f}% | Time: {detection.timestamp.strftime('%H:%M:%S')}\n"
+            result += f"   Details: {detection.details.get('response', 'N/A')[:100]}...\n\n"
+        
+        return result
+
+    @function_tool
+    async def set_confidence_threshold(self, threshold: float, context: RunContext) -> str:
+        """Temporarily adjust the confidence threshold for testing (0-100)."""
+        if threshold < 0 or threshold > 100:
+            return "Error: Confidence threshold must be between 0 and 100"
+        
+        # Store the original threshold in case we want to restore it
+        if not hasattr(self, '_original_confidence_threshold'):
+            self._original_confidence_threshold = 70.0
+        
+        # Update the threshold in the detection logic
+        self._confidence_threshold = threshold
+        
+        return f"Confidence threshold set to {threshold}%. Detections below this threshold will be ignored."
+
+    @function_tool
+    async def get_detection_settings(self, context: RunContext) -> str:
+        """Get current detection settings and thresholds."""
+        settings = f"""
+**Deep Fake Detection Settings:**
+- Analysis Interval: {self._analysis_interval} seconds
+- Detection Cooldown: {self._detection_cooldown} seconds
+- Confidence Threshold: {self._confidence_threshold}% (detections below this are ignored)
+- Active Participants: {len([p for p in self._participants.values() if p.is_monitoring])}
+- Total Monitoring Tasks: {len(self._monitoring_tasks)}
+
+**Detection Approach:**
+- Conservative analysis - only flag clear AI/deep fake signs
+- Normal webcam quality issues are ignored
+- Requires {self._confidence_threshold}%+ confidence for reporting
+"""
+        return settings
+
+    @function_tool
     async def clear_detection_history(self, context: RunContext) -> str:
         """Clear the detection history."""
         count = len(self._detection_results)
@@ -473,8 +555,8 @@ async def entrypoint(ctx: JobContext):
         agent=DeepFakeDetectionAgent(),
         room=ctx.room,
         room_output_options=RoomOutputOptions(
+            # the agent is silent, so we don't need to transcribe or audio
             transcription_enabled=False,
-            # disable audio output if it's not needed
             audio_enabled=False,
         ),
     )
