@@ -2,7 +2,7 @@
 ---
 title: Deep Fake Detection Agent
 category: monitoring
-tags: [vision, deep-fake, ai-detection, monitoring, openai, deepgram]
+tags: [vision, deep-fake, ai-detection, monitoring, google, deepgram]
 difficulty: advanced
 description: Shows how to create an agent that monitors video streams for AI bots and deep fake detection.
 demonstrates:
@@ -28,7 +28,7 @@ from livekit import rtc
 from livekit.agents import JobContext, WorkerOptions, cli, get_job_context, RoomOutputOptions
 from livekit.agents.llm import function_tool, ImageContent, ChatContext, ChatMessage
 from livekit.agents.voice import Agent, AgentSession, RunContext
-from livekit.plugins import deepgram, openai, silero, rime
+from livekit.plugins import silero, google
 
 logger = logging.getLogger("deep-fake-detector")
 logger.setLevel(logging.INFO)
@@ -71,9 +71,10 @@ class DeepFakeDetectionAgent(Agent):
         super().__init__(
             instructions="""
                 You are a deep fake detection agent that monitors video streams for AI bots and deep fakes.
-                You can see video frames from participants and analyze them for signs of AI-generated content.
-                When you detect potential AI bots or deep fakes, you will send notifications to the chat.
-                You are a silent monitoring agent. Do not speak or respond to voice commands.
+                You will recieve video clips from participants.
+                Analyze these video clips for signs of AI-generated content, deep fakes, or bot behavior.
+                Respond with 'DETECTION: AI_BOT' or 'DETECTION: DEEP_FAKE' followed by confidence level (0-100) and details if you detect something suspicious, otherwise respond with 'NO_DETECTION'.
+                Do not include any other text in your response.
                 
                 Focus on detecting:
                 - Unnatural facial movements or expressions
@@ -83,7 +84,7 @@ class DeepFakeDetectionAgent(Agent):
                 - Synchronization issues between audio and video
                 - Repetitive or mechanical behaviors
             """,
-            llm=openai.LLM.with_x_ai(model="grok-2-vision", tool_choice=None),
+            llm=google.LLM(model="gemini-2.5-flash-lite", tool_choice=None),
             vad=silero.VAD.load()
         )
         
@@ -263,15 +264,8 @@ class DeepFakeDetectionAgent(Agent):
             analysis_message = ChatMessage(
                 type="message",
                 role="user",
-                content=[
-                    "Analyze this video frame for signs of AI-generated content, deep fakes, or bot behavior. " +
-                    "Look for unnatural facialial expressions, inconsistent lighting, artifacts, unrealistic features, " +
-                    "or any other indicators of synthetic content. " +
-                    "Respond with 'DETECTION: AI_BOT' or 'DETECTION: DEEP_FAKE' followed by confidence level (0-100) " +
-                    "and details if you detect something suspicious, otherwise respond with 'NO_DETECTION'."
-                ]
+                content=[ImageContent(image=frame)]
             )
-            analysis_message.content.append(ImageContent(image=frame))
             
             # Create chat context
             chat_ctx = ChatContext([analysis_message])
@@ -280,13 +274,17 @@ class DeepFakeDetectionAgent(Agent):
             
             # Get analysis from LLM
             response_text = ""
-            async with self.llm.chat(chat_ctx=chat_ctx) as stream:
-                async for chunk in stream:
-                    if not chunk:
-                        continue
-                    content = getattr(chunk.delta, 'content', None) if hasattr(chunk, 'delta') else str(chunk)
-                    if content:
-                        response_text += content
+            try:
+                async with self.llm.chat(chat_ctx=chat_ctx) as stream:
+                    async for chunk in stream:
+                        if not chunk:
+                            continue
+                        content = getattr(chunk.delta, 'content', None) if hasattr(chunk, 'delta') else str(chunk)
+                        if content:
+                            response_text += content
+            except Exception as e:
+                logger.error(f"Error getting LLM analysis for {participant_data.participant_name}: {e}")
+                response_text = "NO_DETECTION"
             
             response_text = response_text.strip()
             logger.info(f"LLM response for {participant_data.participant_name}: {response_text}")

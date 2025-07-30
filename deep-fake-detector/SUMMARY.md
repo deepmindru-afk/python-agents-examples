@@ -6,7 +6,7 @@ A silent LiveKit monitoring agent that analyzes video streams in real-time to de
 
 ### Core Features
 - **Real-time Video Monitoring**: Continuously monitors all participants' video streams
-- **AI-Powered Detection**: Uses Grok-2-Vision model to analyze frames for synthetic content
+- **AI-Powered Detection**: Uses Gemini 2.0 Flash Experimental model to analyze frames for synthetic content
 - **Chat Notifications**: Sends formatted alerts to the room chat when detections are made
 - **RPC Integration**: Provides detection alerts via RPC for client-side integration
 - **Detection Statistics**: Tracks and reports detection statistics
@@ -38,7 +38,7 @@ The agent looks for various indicators of AI-generated or deep fake content:
 
 ### Agent Features
 - **Video Stream Management**: Handles video track subscriptions and frame processing
-- **Frame Analysis**: Uses Grok-2-Vision to analyze video frames every 2 seconds
+- **Frame Analysis**: Uses Gemini 2.0 Flash Experimental to analyze video frames every 2 seconds
 - **Notification System**: Sends alerts via chat and RPC
 - **Function Tools**: Provides `get_detection_stats()` and `clear_detection_history()`
 

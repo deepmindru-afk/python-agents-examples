@@ -5,7 +5,7 @@ A silent LiveKit monitoring agent that analyzes video streams in real-time to de
 ## Features
 
 - **Real-time Video Monitoring**: Continuously monitors video streams from all participants
-- **AI-Powered Detection**: Uses Grok-2-Vision model to analyze frames for signs of synthetic content
+- **AI-Powered Detection**: Uses Gemini 2.0 Flash Experimental model to analyze frames for signs of synthetic content
 - **Chat Notifications**: Sends formatted alerts to the room chat when detections are made
 - **RPC Communication**: Provides detection alerts via RPC for client-side integration
 - **Detection Statistics**: Tracks and reports detection statistics
@@ -28,12 +28,12 @@ The agent looks for various indicators of AI-generated or deep fake content:
 
 1. Ensure you have the required dependencies:
 ```bash
-pip install livekit-agents[openai,silero,deepgram,rime]
+pip install livekit-agents[google,silero,deepgram,rime]
 ```
 
 2. Set up your environment variables in `.env`:
 ```env
-OPENAI_API_KEY=your_openai_api_key
+GOOGLE_API_KEY=your_google_api_key
 DEEPGRAM_API_KEY=your_deepgram_api_key
 LIVEKIT_URL=your_livekit_url
 LIVEKIT_API_KEY=your_livekit_api_key
