@@ -65,7 +65,7 @@ class DeepFakeDetectionAgent(Agent):
         self._monitoring_tasks: list[asyncio.Task] = []
         self._analysis_interval = 2.0  # Analyze frames every 2 seconds
         self._detection_cooldown = 30.0  # Don't report same participant for 30 seconds
-        self._confidence_threshold = 70.0  # Minimum confidence to report detections
+        self._confidence_threshold = 90.0  # Minimum confidence to report detections
         
         logger.info(f"Agent configuration: analysis_interval={self._analysis_interval}s, detection_cooldown={self._detection_cooldown}s, confidence_threshold={self._confidence_threshold}%")
         
@@ -75,21 +75,34 @@ class DeepFakeDetectionAgent(Agent):
                 
                 You will receive video frames from participants and analyze them for signs of AI-generated content, deep fakes, or bot behavior.
                 
-                IMPORTANT: Be conservative but thorough in your analysis. Most real webcam video should be classified as legitimate, but be alert for clear signs of AI generation or deep fake technology.
+                CRITICAL: Be extremely conservative. 99% of webcam video should be classified as legitimate. Only flag content if you are 90%+ confident it shows definitive signs of AI generation or deep fake technology.
                 
                 Response format: 
                 - For detections: 'DETECTION: AI_BOT' or 'DETECTION: DEEP_FAKE' followed by 'Confidence: [0-100]' and details
                 - For no detection: 'NO_DETECTION'
                 
-                Detect deep fakes if you see evidence of:
-                - Facial artifacts, glitches, or unnatural distortions
-                - Facial movements that don't match speech or expressions
-                - Signs of face swapping or manipulation
-                - AI-generated features or textures
-                - Unnatural skin texture or lighting inconsistencies
-                - Synchronization issues between audio and video
+                ONLY detect deep fakes if you see CLEAR and DEFINITIVE evidence of:
+                - Multiple faces or obvious face swapping with visible seams
+                - Facial movements that completely don't match speech (lip sync completely off)
+                - Obvious AI-generated features that are clearly not human (extra eyes, distorted features)
+                - Severe synchronization issues between audio and video
+                - Clear signs of face manipulation with obvious artifacts
                 
-                Normal webcam quality issues, minor compression artifacts, or lighting variations should generally NOT be flagged as deep fakes unless they are clearly artificial.
+                NEVER flag as deep fakes (these are normal webcam characteristics):
+                - Any color variations (red hue, blue tint, etc.) - normal in webcams
+                - Pixelation or compression artifacts - very common in webcam video
+                - Smooth skin texture - many people have good skin
+                - Lighting inconsistencies - normal in webcam environments
+                - Minor video quality issues - standard for webcams
+                - Natural variations in skin texture
+                - Normal webcam compression or quality limitations
+                - Any artifacts around face edges - common in webcam compression
+                - Inconsistent lighting with environment - normal webcam behavior
+                - Any "unnatural" colors or lighting - webcams often have color issues
+                
+                REMEMBER: Webcams have poor quality, compression artifacts, color issues, and lighting problems. These are NORMAL and should NEVER be flagged as deep fakes.
+                
+                When in doubt, classify as NO_DETECTION. It's better to miss a potential deep fake than to incorrectly flag legitimate users.
                 
                 This analysis is for security monitoring purposes only.
             """,
@@ -280,7 +293,7 @@ class DeepFakeDetectionAgent(Agent):
                 analysis_message = ChatMessage(
                     type="message",
                     role="user",
-                    content=["Analyze this video frame for deep fake detection. Be conservative but thorough - flag if you are 70%+ confident of AI/deep fake signs. Respond with 'DETECTION: AI_BOT' or 'DETECTION: DEEP_FAKE' followed by 'Confidence: [0-100]' and details, or 'NO_DETECTION'.", image_content]
+                    content=["Analyze this video frame for deep fake detection. Be conservative but thorough - flag if you are 90%+ confident of AI/deep fake signs. Respond with 'DETECTION: AI_BOT' or 'DETECTION: DEEP_FAKE' followed by 'Confidence: [0-100]' and details, or 'NO_DETECTION'.", image_content]
                 )
                 logger.debug(f"Successfully created analysis message for {participant_data.participant_name}")
             except Exception as e:
@@ -495,6 +508,12 @@ class DeepFakeDetectionAgent(Agent):
         return f"Confidence threshold set to {threshold}%. Detections below this threshold will be ignored."
 
     @function_tool
+    async def enable_testing_mode(self, context: RunContext) -> str:
+        """Enable testing mode with lower confidence threshold (50%) for testing deep fake detection. WARNING: May cause false positives."""
+        self._confidence_threshold = 50.0
+        return "Testing mode enabled with 50% confidence threshold. WARNING: This may cause false positives on normal webcam video. Use 'set_confidence_threshold 80' to return to normal mode."
+
+    @function_tool
     async def get_detection_settings(self, context: RunContext) -> str:
         """Get current detection settings and thresholds."""
         settings = f"""
@@ -518,6 +537,52 @@ class DeepFakeDetectionAgent(Agent):
         count = len(self._detection_results)
         self._detection_results.clear()
         return f"Cleared {count} detection records from history."
+
+    @function_tool
+    async def analyze_last_detection(self, context: RunContext) -> str:
+        """Analyze the last detection and explain why it was flagged."""
+        if not self._detection_results:
+            return "No detections have been made yet."
+        
+        last_detection = self._detection_results[-1]
+        analysis = f"""
+**Last Detection Analysis:**
+- Participant: {last_detection.participant_name}
+- Type: {last_detection.detection_type.upper()}
+- Confidence: {last_detection.confidence:.1f}%
+- Time: {last_detection.timestamp.strftime('%H:%M:%S')}
+- Threshold: {self._confidence_threshold}%
+
+**LLM Response:**
+{last_detection.details.get('response', 'No response details available')}
+
+**Analysis:**
+This detection was made because the confidence ({last_detection.confidence:.1f}%) exceeded the current threshold ({self._confidence_threshold}%).
+"""
+        return analysis
+
+    @function_tool
+    async def test_threshold_sensitivity(self, context: RunContext) -> str:
+        """Show what detections would have been made with different confidence thresholds."""
+        if not self._detection_results:
+            return "No detections have been made yet."
+        
+        thresholds = [50, 60, 70, 80, 90, 95]
+        result = "**Threshold Sensitivity Analysis:**\n\n"
+        
+        for threshold in thresholds:
+            detections_above = [d for d in self._detection_results if d.confidence >= threshold]
+            result += f"**{threshold}% threshold**: {len(detections_above)} detections\n"
+            
+            if detections_above:
+                for detection in detections_above[-3:]:  # Show last 3
+                    result += f"  - {detection.detection_type.upper()}: {detection.participant_name} ({detection.confidence:.1f}%)\n"
+            result += "\n"
+        
+        result += f"**Current threshold**: {self._confidence_threshold}%\n"
+        result += f"**Total detections made**: {len(self._detection_results)}"
+        
+        return result
 
     async def on_user_turn_completed(self, turn_ctx: ChatContext, new_message: ChatMessage) -> None:
         """Handle user turn completion - add any relevant detection context."""
