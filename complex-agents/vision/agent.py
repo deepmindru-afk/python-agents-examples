@@ -1,5 +1,4 @@
-## This is a basic example of how to use function calling.
-## To test the function, you can ask the agent to print to the console!
+## A multimodal voice assistant with vision capabilities that can see and discuss what users show through their camera using LiveKit's voice agents.
 
 import asyncio
 import logging
