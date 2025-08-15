@@ -20,9 +20,9 @@ This demo shows a medical note-taking assistant that transcribes conversations b
 ## Running the Application
 
 ### Prerequisites
-- Python 3.8+
+- Python 3.10+
 - Node.js 18+
-- LiveKit credentials (already configured in `.env` files)
+- LiveKit credentials
 
 ### Backend Agent
 

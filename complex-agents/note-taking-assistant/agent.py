@@ -68,33 +68,34 @@ class NoteTakingAssistant:
         """Send transcription to Cerebras and update notes"""
         try:
             # Send to LLM for processing
-            prompt = f"""You are a note-taking assistant for a voice-based meetin between a doctor and a patient. You will get a transcript of what is being said, and your job is to take notes.
+            prompt = f"""
+                You are a note-taking assistant for a voice-based meeting between a doctor and a patient. You will get a transcript of what is being said, and your job is to take notes.
+                Current Notes:
+                {self.current_notes if self.current_notes else "(No notes yet)"}
 
-Current Notes:
-{self.current_notes if self.current_notes else "(No notes yet)"}
+                New Transcription:
+                {new_transcription}
 
-New Transcription:
-{new_transcription}
+                Instructions:
+                You should try to track:
+                - Chief complaints
+                - History of present illness
+                - Past medical history
 
-Instructions:
-You should try to track:
-- Chief complaints
-- History of present illness
-- Past medical history
+                Only add headers for this information if it is explicitly discussed in the transcription.
+                If it is not discussed, do not add any headers for that topic.
 
-Only add headers for this information if it is explicitly discussed in the transcription.
-If it is not discussed, do not add any headers for that topic.
+                - Integrate the new information into the existing notes if there is any information that should be included.
+                - Your job is to capture the spirit of the conversation and the key points that are being discussed, but you don't need to
+                include every single thing that is said
+                - Never add any information that is not in the transcription.
+                - Never add notes about things that should be "confirmed" or "asked" to the patient that haven't been discussed.
+                - Your job is exclusively to capture what has been discussed, not keep track of what SHOULD be discussed.
+                - Only ever add information that is explicitly discussed in the transcription.
+                - Keep the notes organized and structured
 
-- Integrate the new information into the existing notes if there is any information that should be included.
-- Your job is to capture the spirit of the conversation and the key points that are being discussed, but you don't need to
-  include every single thing that is said
-- Never add any information that is not in the transcription.
-- Never add notes about things that should be "confirmed" or "asked" to the patient that haven't been discussed.
-- Your job is exclusively to capture what has been discussed, not keep track of what SHOULD be discussed.
-- Only ever add information that is explicitly discussed in the transcription.
-- Keep the notes organized and structured
-
-Updated Notes:"""
+                Updated Notes:
+            """
 
             ctx = ChatContext([
                 ChatMessage(
