@@ -1,3 +1,20 @@
+"""
+---
+title: Function Calling Test Agent
+category: testing
+tags: [function_calling, console_print, agent_session_config]
+difficulty: beginner
+description: Testing agent with single print_to_console function
+demonstrates:
+  - Basic function tool implementation
+  - Console printing functionality
+  - Custom agent instructions
+  - Agent-level STT/LLM/TTS/VAD configuration
+  - on_enter event handler
+  - Returning tuples from function tools
+---
+"""
+
 ## This is a basic example of how to use function calling.
 ## To test the function, you can ask the agent to print to the console!
 

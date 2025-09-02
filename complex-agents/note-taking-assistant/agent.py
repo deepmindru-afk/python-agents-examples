@@ -16,12 +16,11 @@ import asyncio
 import json
 from pathlib import Path
 from dotenv import load_dotenv
-from livekit.agents import JobContext, WorkerOptions, cli
-from livekit.agents.voice import Agent, AgentSession
+from livekit.agents import JobContext, WorkerOptions, cli, metrics
+from livekit.agents.voice import Agent, AgentSession, MetricsCollectedEvent
 from livekit.agents.llm import ChatContext, ChatMessage
 from livekit.plugins import openai, silero, deepgram
 from livekit.agents.telemetry import set_tracer_provider
-from livekit.agents import metrics, MetricsCollectedEvent
 from typing import List
 import re
 
@@ -182,6 +181,58 @@ class NoteTakingAssistant:
             logger.info(f"Sent transcription to frontend: {transcription[:50]}...")
         except Exception as e:
             logger.error(f"Error sending transcription via RPC: {e}")
+    
+    async def generate_diagnosis(self, notes: str) -> str:
+        """Generate a diagnosis based on the current notes"""
+        try:
+            prompt = f"""
+                You are a medical diagnostic assistant. Based on the following medical notes from a patient consultation, 
+                provide potential diagnoses and recommendations.
+                
+                Medical Notes:
+                {notes}
+                
+                Please provide:
+                1. **Possible Diagnoses**: List the most likely diagnoses based on the symptoms and history
+                2. **Differential Diagnoses**: Other conditions to consider
+                3. **Recommended Tests**: Suggest appropriate diagnostic tests if needed
+                4. **Treatment Considerations**: Initial treatment approaches to consider
+                5. **Follow-up Recommendations**: When and why to follow up
+                
+                IMPORTANT: This is for educational purposes only and should not replace professional medical judgment.
+                Always recommend consulting with healthcare professionals for actual medical advice.
+                
+                Format your response in clear markdown with headers and bullet points.
+            """
+            
+            ctx = ChatContext([
+                ChatMessage(
+                    type="message",
+                    role="system",
+                    content=["""You are a knowledgeable medical diagnostic assistant. Provide thorough, 
+                             evidence-based assessments while always emphasizing that your analysis is for 
+                             educational purposes and should not replace professional medical consultation."""]
+                ),
+                ChatMessage(
+                    type="message",
+                    role="user",
+                    content=[prompt]
+                )
+            ])
+            
+            response = ""
+            async with self.llm.chat(chat_ctx=ctx) as stream:
+                async for chunk in stream:
+                    if not chunk:
+                        continue
+                    content = getattr(chunk.delta, 'content', None) if hasattr(chunk, 'delta') else str(chunk)
+                    if content:
+                        response += content
+            
+            return response.strip()
+        except Exception as e:
+            logger.error(f"Error generating diagnosis: {e}")
+            return f"Error generating diagnosis: {str(e)}"
 
 async def entrypoint(ctx: JobContext):
     setup_langfuse()  # set up the langfuse tracer
@@ -203,18 +254,21 @@ async def entrypoint(ctx: JobContext):
     @session.on("user_input_transcribed")
     def on_transcript(transcript):
         if transcript.is_final:
-            # Add to buffer with a space
+            # Add to buffer with a space for note processing
             if note_assistant.transcript_buffer:
                 note_assistant.transcript_buffer += " " + transcript.transcript
             else:
                 note_assistant.transcript_buffer = transcript.transcript
+            
+            # Send the current buffer state to frontend for display
+            asyncio.create_task(note_assistant.send_transcription_to_frontend(note_assistant.transcript_buffer))
                 
             logger.info(f"Fragment received: {transcript.transcript}")
             
             # Count sentences in buffer (looking for . ! ? endings)
             sentence_endings = re.findall(r'[.!?]+', note_assistant.transcript_buffer)
             
-            # If we have at least 3 sentences, process the buffer
+            # If we have at least 3 sentences, process the buffer for notes
             if len(sentence_endings) >= 3:
                 # Find the position after the third sentence ending
                 sentence_count = 0
@@ -231,12 +285,14 @@ async def entrypoint(ctx: JobContext):
                 # Keep the remainder in the buffer
                 note_assistant.transcript_buffer = note_assistant.transcript_buffer[last_pos:].strip()
                 
-                # Add the three sentences to transcriptions
+                # Add the three sentences to transcriptions history
                 note_assistant.transcriptions.append(three_sentences)
-                logger.info(f"Added to transcriptions: {three_sentences}")
+                logger.info(f"Processing for notes: {three_sentences}")
                 
-                # Send transcription to frontend immediately
-                asyncio.create_task(note_assistant.send_transcription_to_frontend(three_sentences))
+                # Send the remaining buffer to frontend (or empty string if nothing left)
+                asyncio.create_task(note_assistant.send_transcription_to_frontend(
+                    note_assistant.transcript_buffer if note_assistant.transcript_buffer else ""
+                ))
                 
                 # Cancel any pending note update task
                 if note_assistant.note_update_task and not note_assistant.note_update_task.done():
@@ -261,6 +317,40 @@ async def entrypoint(ctx: JobContext):
         agent=agent,
         room=ctx.room
     )
+    
+    # Register RPC handler for diagnosis requests after session starts
+    async def handle_diagnosis_request(rpc_invocation):
+        """Handle diagnosis request from frontend"""
+        try:
+            payload = json.loads(rpc_invocation.payload)
+            notes = payload.get("notes", "")
+            
+            if not notes:
+                return json.dumps({"error": "No notes provided for diagnosis"})
+            
+            # Generate diagnosis
+            diagnosis = await note_assistant.generate_diagnosis(notes)
+            
+            # Send diagnosis back to frontend
+            remote_participants = list(ctx.room.remote_participants.values())
+            if remote_participants:
+                client_participant = remote_participants[0]
+                await ctx.room.local_participant.perform_rpc(
+                    destination_identity=client_participant.identity,
+                    method="receive_diagnosis",
+                    payload=json.dumps({
+                        "diagnosis": diagnosis,
+                        "timestamp": asyncio.get_event_loop().time()
+                    })
+                )
+            
+            return json.dumps({"success": True})
+        except Exception as e:
+            logger.error(f"Error handling diagnosis request: {e}")
+            return json.dumps({"error": str(e)})
+    
+    # Register the RPC method
+    ctx.room.local_participant.register_rpc_method("request_diagnosis", handle_diagnosis_request)
 
     ctx.add_shutdown_callback(log_usage)
 

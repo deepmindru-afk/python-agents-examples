@@ -1,3 +1,17 @@
+"""
+---
+title: Uninterruptable Agent
+category: basics
+tags: [interruptions, allow_interruptions, agent_configuration]
+difficulty: beginner
+description: Agent configured to complete responses without user interruptions
+demonstrates:
+  - Setting allow_interruptions=False in agent configuration
+  - Testing interruption handling behavior
+  - Agent-initiated conversation with on_enter
+---
+"""
+
 # This agent isn't interruptable, so it will keep talking even if the user tries to speak.
 
 from pathlib import Path

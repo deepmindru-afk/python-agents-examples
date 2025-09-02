@@ -1,3 +1,19 @@
+"""
+---
+title: Basic Agent Test Starter
+category: testing
+tags: [pytest, basic-testing, getting-started, agent-greeting]
+difficulty: beginner
+description: Simple starting point for testing voice agents with basic greeting validation
+demonstrates:
+  - Basic pytest setup for agent testing
+  - Environment configuration for testing
+  - Simple agent session creation
+  - Basic greeting behavior testing
+  - LLM-based response validation
+---
+"""
+
 import pytest
 import pytest_asyncio
 import sys

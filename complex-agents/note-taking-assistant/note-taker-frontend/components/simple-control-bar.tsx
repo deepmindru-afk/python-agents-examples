@@ -2,9 +2,13 @@
 
 import React from 'react';
 import { Track } from 'livekit-client';
-import { useTrackToggle, useRoomContext } from '@livekit/components-react';
+import { useRoomContext, useTrackToggle } from '@livekit/components-react';
+import {
+  MicrophoneIcon,
+  MicrophoneSlashIcon,
+  PhoneDisconnectIcon,
+} from '@phosphor-icons/react/dist/ssr';
 import { Button } from '@/components/ui/button';
-import { MicrophoneIcon, MicrophoneSlashIcon, PhoneDisconnectIcon } from '@phosphor-icons/react/dist/ssr';
 
 export const SimpleControlBar = () => {
   const { buttonProps: micButtonProps, enabled: micEnabled } = useTrackToggle({
@@ -19,9 +23,9 @@ export const SimpleControlBar = () => {
         {...micButtonProps}
         size="lg"
         className={`rounded-full p-4 ${
-          micEnabled 
-            ? "bg-gray-200 hover:bg-gray-300 text-gray-800 border border-gray-300" 
-            : "bg-red-500 hover:bg-red-600 text-white"
+          micEnabled
+            ? 'border border-gray-300 bg-gray-200 text-gray-800 hover:bg-gray-300'
+            : 'bg-red-500 text-white hover:bg-red-600'
         }`}
       >
         {micEnabled ? <MicrophoneIcon size={24} /> : <MicrophoneSlashIcon size={24} />}
@@ -31,7 +35,7 @@ export const SimpleControlBar = () => {
       <Button
         onClick={() => room.disconnect()}
         size="lg"
-        className="rounded-full px-6 py-4 flex items-center gap-2 bg-red-500 hover:bg-red-600 text-white"
+        className="flex items-center gap-2 rounded-full bg-red-500 px-6 py-4 text-white hover:bg-red-600"
       >
         <PhoneDisconnectIcon size={24} />
         <span>Leave Call</span>

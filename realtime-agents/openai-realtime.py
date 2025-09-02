@@ -1,3 +1,18 @@
+"""
+---
+title: AWS Realtime Voice Agent
+category: realtime-agents
+tags: [aws_realtime, aws_bedrock, nova_model]
+difficulty: beginner
+description: Voice agent using AWS Bedrock Nova Realtime model
+demonstrates:
+  - AWS Realtime model integration
+  - AWS Bedrock Nova model usage
+  - Context connection before session
+  - Minimal agent with AWS
+---
+"""
+
 from dotenv import load_dotenv
 from pathlib import Path
 from livekit import agents

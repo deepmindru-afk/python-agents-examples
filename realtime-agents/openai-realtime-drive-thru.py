@@ -1,3 +1,17 @@
+"""
+---
+title: Drive-Thru Order System (Duplicate)
+category: realtime-agents
+tags: [duplicate_example, ordering_system]
+difficulty: advanced
+description: Duplicate of realtime/openai-realtime-drive-thru.py
+demonstrates:
+  - Same drive-thru ordering implementation
+  - Duplicate for testing purposes
+  - Full menu and order management
+---
+"""
+
 import librosa
 import random, math
 import numpy as np

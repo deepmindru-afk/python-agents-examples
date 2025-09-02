@@ -16,7 +16,7 @@ from pathlib import Path
 from dotenv import load_dotenv
 from livekit.agents import JobContext, WorkerOptions, cli
 from livekit.agents.voice import Agent, AgentSession
-from livekit.plugins import openai, silero, deepgram
+from livekit.plugins import openai, silero, deepgram, inworld
 
 load_dotenv(dotenv_path=Path(__file__).parent.parent / '.env')
 
@@ -31,7 +31,7 @@ class ListenAndRespondAgent(Agent):
             """,
             stt=deepgram.STT(),
             llm=openai.LLM(model="gpt-4o"),
-            tts=openai.TTS(),
+            tts=inworld.TTS(),
             vad=silero.VAD.load()
         )
     

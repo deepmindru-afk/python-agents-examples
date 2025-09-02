@@ -1,3 +1,19 @@
+"""
+---
+title: Testing Test
+category: testing
+tags: [pytest, test-validation, duplicate-test, agent-greeting]
+difficulty: beginner
+description: Duplicate test file demonstrating basic agent testing patterns
+demonstrates:
+  - Basic pytest async test structure
+  - Agent session lifecycle management
+  - Environment variable loading for tests
+  - Simple greeting validation pattern
+  - LLM judge pattern for response evaluation
+---
+"""
+
 import pytest
 import pytest_asyncio
 import sys

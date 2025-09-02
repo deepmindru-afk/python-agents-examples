@@ -67,7 +67,7 @@ export default async function RootLayout({ children }: RootLayoutProps) {
         <ApplyThemeScript />
       </head>
       <body
-        className={`${publicSans.variable} ${commitMono.variable} overflow-x-hidden antialiased light bg-gray-50`}
+        className={`${publicSans.variable} ${commitMono.variable} light overflow-x-hidden bg-gray-50 antialiased`}
       >
         {children}
         <div className="group fixed bottom-0 left-1/2 z-50 mb-2 -translate-x-1/2">

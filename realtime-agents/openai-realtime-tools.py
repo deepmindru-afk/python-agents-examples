@@ -1,3 +1,18 @@
+"""
+---
+title: OpenAI Realtime with Function Tools (Duplicate)
+category: realtime-agents
+tags: [duplicate_example, function_tools, math_operations]
+difficulty: intermediate
+description: Duplicate of realtime/openai-realtime-tools.py with same 50+ tools
+demonstrates:
+  - Same extensive function tool collection
+  - Duplicate example for testing
+  - Math and string operations
+  - List manipulations
+---
+"""
+
 import librosa
 import random, math
 import numpy as np

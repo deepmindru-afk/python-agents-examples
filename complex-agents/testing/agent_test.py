@@ -1,3 +1,20 @@
+"""
+---
+title: Comprehensive Agent Testing
+category: testing
+tags: [pytest, agent-testing, function-mocking, conversation-testing, fixtures]
+difficulty: advanced
+description: Complete test suite for voice agents with fixtures, mocks, and conversation flows
+demonstrates:
+  - Comprehensive pytest fixtures for agent testing
+  - Function tool mocking and validation
+  - Conversation flow and context testing
+  - Error handling and edge case coverage
+  - Parameterized testing for multiple scenarios
+  - Class-based test organization with shared setup
+---
+"""
+
 import pytest
 import pytest_asyncio
 import sys

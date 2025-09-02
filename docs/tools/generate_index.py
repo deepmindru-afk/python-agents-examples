@@ -140,11 +140,12 @@ def generate_index(base_path: Path, output_path: Path):
         print(f"  - {category}: {count}")
 
 if __name__ == "__main__":
-    # Get the demo-monolith directory (parent of docs)
-    docs_dir = Path(__file__).parent
-    base_dir = docs_dir.parent
-    
-    # Output file in docs directory
+    # Resolve paths relative to this script's new location (docs/tools)
+    script_path = Path(__file__).resolve()
+    # demo-monolith repo root is two levels up from this file
+    base_dir = script_path.parents[2]
+    # Write the index into the docs directory (one level up from this file)
+    docs_dir = script_path.parents[1]
     output_file = docs_dir / "index.yaml"
-    
+
     generate_index(base_dir, output_file)

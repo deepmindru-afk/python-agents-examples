@@ -1,3 +1,17 @@
+"""
+---
+title: Audio Pitch Shifting (Duplicate)
+category: realtime-agents
+tags: [duplicate_example, audio_processing]
+difficulty: advanced
+description: Duplicate of realtime/openai-realtime-pitch-shift.py
+demonstrates:
+  - Same pitch shifting implementation
+  - Duplicate for testing purposes
+  - Audio stream processing
+---
+"""
+
 import librosa
 import numpy as np
 from typing import AsyncIterable
