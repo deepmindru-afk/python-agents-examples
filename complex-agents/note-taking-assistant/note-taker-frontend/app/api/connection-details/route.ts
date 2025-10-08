@@ -73,7 +73,7 @@ function createParticipantToken(userInfo: AccessTokenOptions, roomName: string) 
   at.roomConfig = new RoomConfiguration({
     agents: [
       new RoomAgentDispatch({
-        agentName: "portal-agent",
+        agentName: "portal-med-agent",
         metadata: '{"user_id": "12345"}',
       }),
     ],

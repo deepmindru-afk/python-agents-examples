@@ -58,11 +58,10 @@ export const Welcome = ({
               Live consultation workspace
             </span>
             <h1 className="text-3xl leading-tight font-semibold text-slate-900 sm:text-4xl dark:text-white">
-              Medical Note Taking Assistant
+              Помощник для ведения медицинских записей
             </h1>
             <p className="max-w-xl text-base leading-relaxed text-slate-600 dark:text-slate-300">
-              Seamlessly capture conversations, generate structured notes, and hand off detailed
-              summaries before the patient leaves the room.
+              Без усилий записывайте разговоры, формируйте структурированные заметки и передавайте подробные сводки ещё до того, как пациент покинет кабинет.
             </p>
 
             <ul className="grid gap-4 text-base text-slate-700 dark:text-slate-200">
@@ -78,7 +77,7 @@ export const Welcome = ({
                     <path d="M5 13l4 4L19 7" strokeLinecap="round" strokeLinejoin="round" />
                   </svg>
                 </span>
-                <span>Real-time transcription with speaker-aware context.</span>
+                <span>Транскрипция в реальном времени с учётом контекста.</span>
               </li>
               <li className="flex items-start gap-3">
                 <span className="mt-1 flex size-7 items-center justify-center rounded-full bg-sky-100 text-sky-600 shadow-sm dark:bg-sky-500/20 dark:text-sky-200">
@@ -92,7 +91,7 @@ export const Welcome = ({
                     <path d="M5 13l4 4L19 7" strokeLinecap="round" strokeLinejoin="round" />
                   </svg>
                 </span>
-                <span>AI-curated SOAP notes aligned with clinical best practices.</span>
+                <span>AI-кураторские записи в формате SOAP, соответствующие клиническим стандартам</span>
               </li>
               <li className="flex items-start gap-3">
                 <span className="mt-1 flex size-7 items-center justify-center rounded-full bg-sky-100 text-sky-600 shadow-sm dark:bg-sky-500/20 dark:text-sky-200">
@@ -106,7 +105,7 @@ export const Welcome = ({
                     <path d="M5 13l4 4L19 7" strokeLinecap="round" strokeLinejoin="round" />
                   </svg>
                 </span>
-                <span>One-click diagnosis request powered by Portal voice agents.</span>
+                <span>Запрос диагноза в один клик с помощью голосовых агентов Portal.</span>
               </li>
             </ul>
 
@@ -141,12 +140,11 @@ export const Welcome = ({
             <div className="relative flex flex-col gap-6">
               <div>
                 <p className="text-xs font-semibold tracking-[0.3em] text-sky-300/80 uppercase">
-                  Session snapshot
+                  Сессия
                 </p>
-                <h2 className="mt-2 text-2xl font-semibold">Agent environment</h2>
+                <h2 className="mt-2 text-2xl font-semibold">Рабочая область</h2>
                 <p className="mt-2 text-sm text-slate-300">
-                  Your Agent workspace is ready. Launch the consultation to begin streaming audio
-                  and collecting structured notes instantly.
+                  Рабочая область вашего агента готова. Запустите консультацию, чтобы начать потоковую передачу аудио и мгновенно собирать структурированные заметки.
                 </p>
               </div>
 
@@ -159,7 +157,7 @@ export const Welcome = ({
                     </span>
                     Agent link
                   </dt>
-                  <dd className="text-xs tracking-[0.2em] text-emerald-200 uppercase">Connected</dd>
+                  <dd className="text-xs tracking-[0.2em] text-emerald-200 uppercase">Подключено</dd>
                 </div>
                 <div className="flex items-center justify-between rounded-2xl border border-white/10 bg-white/5 px-4 py-3">
                   <dt className="font-medium text-slate-200">STT model</dt>

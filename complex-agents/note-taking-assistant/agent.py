@@ -24,11 +24,58 @@ from livekit.plugins import openai, silero, deepgram
 from livekit.agents.telemetry import set_tracer_provider
 from typing import List
 
+
+from livekit import rtc, api
+from livekit.agents import (
+    RoomOutputOptions,
+    RoomInputOptions,
+    AudioConfig,
+    BackgroundAudioPlayer,
+    BuiltinAudioClip,
+    AutoSubscribe,
+    AgentSession,
+    JobContext,
+    JobProcess,
+    ChatContext,
+    ChatMessage,
+    StopResponse,
+    WorkerOptions,
+    WorkerPermissions,
+    RunContext,
+    WorkerType,
+    RoomIO,
+    Agent,
+    ModelSettings,
+    function_tool,
+    ToolError,
+    metrics,
+    cli,
+    llm,
+    mcp,
+    tts,
+    stt,
+    get_job_context,
+    AgentStateChangedEvent,
+    CloseEvent,
+    CloseReason,
+    UserStateChangedEvent,
+    AgentFalseInterruptionEvent,
+    ConversationItemAddedEvent,
+    UserInputTranscribedEvent,
+    MetricsCollectedEvent,
+    FunctionCallEvent,
+    FunctionCallOutputEvent,
+    FunctionToolsExecutedEvent,
+    NOT_GIVEN,
+)
+
 load_dotenv(dotenv_path=Path(__file__).parent.parent.parent / '.env')
+load_dotenv()
 usage_collector = metrics.UsageCollector()
 logger = logging.getLogger("note_taking_assistant")
 logger.setLevel(logging.INFO)
 
+'''
 def setup_langfuse(
     host: str | None = None, public_key: str | None = None, secret_key: str | None = None
 ):
@@ -50,6 +97,7 @@ def setup_langfuse(
     trace_provider = TracerProvider()
     trace_provider.add_span_processor(BatchSpanProcessor(OTLPSpanExporter()))
     set_tracer_provider(trace_provider)
+'''
 
 class NoteTakingAssistant:
     def __init__(self, ctx: JobContext):
@@ -61,7 +109,8 @@ class NoteTakingAssistant:
         # Remember the last transcription snippet sent to the frontend to avoid duplicates
         self._last_transcription_sent: str = ""
         # Create LLM instance once with Cerebras
-        self.llm = openai.LLM.with_cerebras(model="gpt-oss-120b")
+        self.llm = openai.LLM(base_url="https://llm.portalos.online", model="cerebras/llama-4-maverick-17b-128e-instruct") #user=participant_name + "|||live_" + ctx.room.name, client=client, metadata={"room":"dasdsadasdsa"}),
+
         # Store context for RPC communication
         self.ctx = ctx
 
@@ -267,8 +316,10 @@ class NoteTakingAssistant:
             logger.error(f"Error generating diagnosis: {e}")
             return f"Error generating diagnosis: {str(e)}"
 
+
+
 async def entrypoint(ctx: JobContext):
-    setup_langfuse()  # set up the langfuse tracer
+    #setup_langfuse()  # set up the langfuse tracer
 
     session = AgentSession()
     
@@ -277,7 +328,10 @@ async def entrypoint(ctx: JobContext):
         instructions="""
             You are a note-taking assistant.
         """,
-        stt=deepgram.STTv2(eager_eot_threshold=0.5),
+        stt=deepgram.STTv2(
+            eager_eot_threshold=0.5,
+            #language="ru",
+            ),
         vad=silero.VAD.load()
         )
 
@@ -368,5 +422,25 @@ async def entrypoint(ctx: JobContext):
 
     ctx.add_shutdown_callback(log_usage)
 
-if __name__ == "__main__":
-    cli.run_app(WorkerOptions(entrypoint_fnc=entrypoint))
+if __name__=="__main__":
+    cli.run_app(
+        WorkerOptions(
+            entrypoint_fnc=entrypoint,
+            #prewarm_fnc=prewarm_process,
+            worker_type=WorkerType.ROOM, #PUBLISHER,
+            job_memory_warn_mb=1500,
+            initialize_process_timeout=44,
+            agent_name="portal-med-agent",
+            #port="8089",
+            #agent_name="agent-"+str(str(random.randint(1,99))),
+            #num_idle_processes=2,
+            #permissions=WorkerPermissions(
+            #    can_publish=True,
+            #    can_subscribe=True,
+            #    can_publish_data=True,
+            #    # when set to true, the agent won't be visible to others in the room. when hidden, it will also not be able to publish tracks to the room as it won't be visible.
+            #    hidden=False,
+            #),            
+            #request_fnc=request_fnc,
+            )
+        )
