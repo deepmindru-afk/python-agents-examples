@@ -147,7 +147,7 @@ export const SessionView = ({
                     {appConfig.pageTitle ?? 'Medical Note Taking Assistant'}
                   </p>
                   <p className="text-sm text-slate-500 dark:text-slate-300">
-                    Secure WebRTC session powered by LiveKit Voice AI
+                    Secure WebRTC session powered by Portal Voice AI
                   </p>
                 </div>
               </div>

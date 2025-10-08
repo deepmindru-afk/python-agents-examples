@@ -62,7 +62,7 @@ export default function ComponentsLayout({ children }: { children: React.ReactNo
               'bg-background rounded-t-lg border-t border-r border-l'
           )}
         >
-          LiveKit components
+          Portal components
         </Link>
       </div>
 
