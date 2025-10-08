@@ -36,7 +36,7 @@ export const Welcome = ({
 
             <div>
               <p className="text-sm font-semibold tracking-[0.24em] text-sky-600 uppercase dark:text-sky-200">
-                PulseNote AI
+                PortalNote AI
               </p>
               <p className="mt-1 text-lg font-semibold text-slate-800 dark:text-white">
                 Clinical documentation without the busywork
@@ -106,7 +106,7 @@ export const Welcome = ({
                     <path d="M5 13l4 4L19 7" strokeLinecap="round" strokeLinejoin="round" />
                   </svg>
                 </span>
-                <span>One-click diagnosis request powered by LiveKit voice agents.</span>
+                <span>One-click diagnosis request powered by Portal voice agents.</span>
               </li>
             </ul>
 
@@ -145,7 +145,7 @@ export const Welcome = ({
                 </p>
                 <h2 className="mt-2 text-2xl font-semibold">Agent environment</h2>
                 <p className="mt-2 text-sm text-slate-300">
-                  Your LiveKit workspace is ready. Launch the consultation to begin streaming audio
+                  Your Agent workspace is ready. Launch the consultation to begin streaming audio
                   and collecting structured notes instantly.
                 </p>
               </div>
@@ -165,14 +165,14 @@ export const Welcome = ({
                   <dt className="font-medium text-slate-200">STT model</dt>
                   <dd className="flex items-center gap-2 text-xs tracking-[0.2em] text-sky-200 uppercase">
                     <span className="size-2 rounded-full bg-sky-300" aria-hidden="true" />
-                    Deepgram Flux
+                    Portal STT
                   </dd>
                 </div>
                 <div className="flex items-center justify-between rounded-2xl border border-white/10 bg-white/5 px-4 py-3">
                   <dt className="font-medium text-slate-200">LLM model</dt>
                   <dd className="flex items-center gap-2 text-xs tracking-[0.2em] text-indigo-200 uppercase">
                     <span className="size-2 rounded-full bg-indigo-300" aria-hidden="true" />
-                    GPT-OSS-120B
+                    Portal Realtime
                   </dd>
                 </div>
               </dl>

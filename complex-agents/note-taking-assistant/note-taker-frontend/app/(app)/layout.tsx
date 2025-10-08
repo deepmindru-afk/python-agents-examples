@@ -15,7 +15,7 @@ export default async function AppLayout({ children }: AppLayoutProps) {
         <a
           target="_blank"
           rel="noopener noreferrer"
-          href="https://livekit.io"
+          href="https://www.portalos.ru"
           className="scale-100 transition-transform duration-300 hover:scale-110"
         >
           <img src={logo} alt={`${companyName} Logo`} className="block size-6 dark:hidden" />
@@ -26,14 +26,14 @@ export default async function AppLayout({ children }: AppLayoutProps) {
           />
         </a>
         <span className="text-foreground font-mono text-xs font-bold tracking-wider uppercase">
-          Built with{' '}
+          Нужен Агент?{' '}
           <a
             target="_blank"
             rel="noopener noreferrer"
-            href="https://docs.livekit.io/agents"
+            href="https://www.portalos.ru"
             className="underline underline-offset-4"
           >
-            LiveKit Agents
+            АО Портал
           </a>
         </span>
       </header>
