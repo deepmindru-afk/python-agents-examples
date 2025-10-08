@@ -58,7 +58,7 @@ export const Welcome = ({
               Консультации в реальном времени 
             </span>
             <h1 className="text-3xl leading-tight font-semibold text-slate-900 sm:text-4xl dark:text-white">
-              Медицинский ИИ-ассистентом
+              Медицинский ИИ-ассистент
             </h1>
             <p className="max-w-xl text-base leading-relaxed text-slate-600 dark:text-slate-300">
               Без усилий записывайте разговоры, формируйте структурированные заметки и передавайте подробные сводки ещё до того, как пациент покинет кабинет.
