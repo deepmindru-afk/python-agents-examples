@@ -327,7 +327,7 @@ export function MedicalNotes({ className }: MedicalNotesProps) {
             >
               {isLoadingDiagnosis ? (
                 <p className="text-sm text-slate-400 italic dark:text-slate-500">
-                  Analyzing notes for potential diagnoses…
+                  Анализ жалоб пациента для создания прогноза диагноза…
                 </p>
               ) : diagnosis ? (
                 <ReactMarkdown
@@ -400,8 +400,7 @@ export function MedicalNotes({ className }: MedicalNotesProps) {
                 </ReactMarkdown>
               ) : (
                 <p className="text-sm text-slate-500 dark:text-slate-400">
-                  Click “Diagnose” once notes are ready to generate differential summaries for quick
-                  review.
+                  Щелкните „Диагностировать“, как только заметки будут готовы, чтобы сгенерировать дифференциальные сводки для быстрого обзора
                 </p>
               )}
             </motion.div>

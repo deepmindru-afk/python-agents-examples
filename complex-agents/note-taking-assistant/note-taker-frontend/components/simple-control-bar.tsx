@@ -54,8 +54,8 @@ export const SimpleControlBar = () => {
           className="inline-flex items-center gap-3 rounded-full bg-gradient-to-r from-rose-500 via-rose-600 to-red-600 px-6 py-3 text-base font-semibold text-white normal-case shadow-lg shadow-rose-500/30 transition hover:-translate-y-0.5 hover:from-rose-500/90 hover:via-rose-600/90 hover:to-red-600/90 focus-visible:ring-rose-500/40"
         >
           <PhoneDisconnectIcon size={22} />
-          <span className="hidden sm:inline">End Consultation</span>
-          <span className="sm:hidden">Leave</span>
+          <span className="hidden sm:inline">Завершить консультацию</span>
+          <span className="sm:hidden">Выйти</span>
         </Button>
       </div>
     </div>

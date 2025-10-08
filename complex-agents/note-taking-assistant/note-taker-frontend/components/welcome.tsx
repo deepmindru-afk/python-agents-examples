@@ -36,17 +36,17 @@ export const Welcome = ({
 
             <div>
               <p className="text-sm font-semibold tracking-[0.24em] text-sky-600 uppercase dark:text-sky-200">
-                PulseNote AI
+                Portal Док
               </p>
               <p className="mt-1 text-lg font-semibold text-slate-800 dark:text-white">
-                Clinical documentation without the busywork
+                Клиническая документация без рутинной работы и непонятного почерка
               </p>
             </div>
           </div>
 
           <div className="hidden shrink-0 items-center gap-2 rounded-full border border-white/80 bg-white/70 px-4 py-2 text-sm font-medium text-slate-600 shadow-lg backdrop-blur md:flex dark:border-slate-700/60 dark:bg-slate-900/60 dark:text-slate-200">
             <span className="inline-flex size-2 rounded-full bg-emerald-400" aria-hidden="true" />
-            HIPAA-ready infrastructure
+            HIPAA-ready инфраструктура
           </div>
         </div>
       </header>
@@ -55,14 +55,13 @@ export const Welcome = ({
         <div className="grid gap-10 overflow-hidden rounded-[2.75rem] border border-white/70 bg-white/80 p-8 shadow-[0_40px_120px_-60px_rgba(15,23,42,0.75)] ring-1 ring-black/5 backdrop-blur-xl md:grid-cols-[minmax(0,1fr)_minmax(0,0.9fr)] md:p-12 dark:border-slate-700/60 dark:bg-slate-900/75 dark:ring-white/10">
           <div className="flex flex-col justify-center gap-6">
             <span className="inline-flex items-center gap-2 self-start rounded-full bg-sky-50 px-3 py-1 text-xs font-semibold tracking-widest text-sky-700 uppercase ring-1 ring-sky-100 dark:bg-sky-500/10 dark:text-sky-200 dark:ring-sky-500/30">
-              Live consultation workspace
+              Консультации в реальном времени 
             </span>
             <h1 className="text-3xl leading-tight font-semibold text-slate-900 sm:text-4xl dark:text-white">
-              Medical Note Taking Assistant
+              Медицинским ИИ-ассистентом
             </h1>
             <p className="max-w-xl text-base leading-relaxed text-slate-600 dark:text-slate-300">
-              Seamlessly capture conversations, generate structured notes, and hand off detailed
-              summaries before the patient leaves the room.
+              Без усилий записывайте разговоры, формируйте структурированные заметки и передавайте подробные сводки ещё до того, как пациент покинет кабинет.
             </p>
 
             <ul className="grid gap-4 text-base text-slate-700 dark:text-slate-200">
@@ -78,7 +77,7 @@ export const Welcome = ({
                     <path d="M5 13l4 4L19 7" strokeLinecap="round" strokeLinejoin="round" />
                   </svg>
                 </span>
-                <span>Real-time transcription with speaker-aware context.</span>
+                <span>Транскрипция в реальном времени с учётом контекста говорящего.</span>
               </li>
               <li className="flex items-start gap-3">
                 <span className="mt-1 flex size-7 items-center justify-center rounded-full bg-sky-100 text-sky-600 shadow-sm dark:bg-sky-500/20 dark:text-sky-200">
@@ -92,7 +91,7 @@ export const Welcome = ({
                     <path d="M5 13l4 4L19 7" strokeLinecap="round" strokeLinejoin="round" />
                   </svg>
                 </span>
-                <span>AI-curated SOAP notes aligned with clinical best practices.</span>
+                <span>AI-кураторские записи в формате SOAP, соответствующие клиническим стандартам.</span>
               </li>
               <li className="flex items-start gap-3">
                 <span className="mt-1 flex size-7 items-center justify-center rounded-full bg-sky-100 text-sky-600 shadow-sm dark:bg-sky-500/20 dark:text-sky-200">
@@ -106,7 +105,7 @@ export const Welcome = ({
                     <path d="M5 13l4 4L19 7" strokeLinecap="round" strokeLinejoin="round" />
                   </svg>
                 </span>
-                <span>One-click diagnosis request powered by LiveKit voice agents.</span>
+                <span>Запрос прогноза диагноза в один клик с помощью голосовых агентов Portal.</span>
               </li>
             </ul>
 
@@ -141,12 +140,11 @@ export const Welcome = ({
             <div className="relative flex flex-col gap-6">
               <div>
                 <p className="text-xs font-semibold tracking-[0.3em] text-sky-300/80 uppercase">
-                  Session snapshot
+                  Состояние сессии
                 </p>
-                <h2 className="mt-2 text-2xl font-semibold">Agent environment</h2>
+                <h2 className="mt-2 text-2xl font-semibold">Рабочая область агента</h2>
                 <p className="mt-2 text-sm text-slate-300">
-                  Your LiveKit workspace is ready. Launch the consultation to begin streaming audio
-                  and collecting structured notes instantly.
+                  Рабочая область вашего агента готова. Запустите консультацию, чтобы начать потоковую передачу аудио и мгновенно собирать структурированные заметки.
                 </p>
               </div>
 
@@ -157,33 +155,32 @@ export const Welcome = ({
                       <span className="absolute inline-flex size-2 animate-ping rounded-full bg-emerald-300/70" />
                       <span className="inline-flex size-2 rounded-full bg-emerald-300" />
                     </span>
-                    Agent link
+                    Состояние подключения
                   </dt>
-                  <dd className="text-xs tracking-[0.2em] text-emerald-200 uppercase">Connected</dd>
+                  <dd className="text-xs tracking-[0.2em] text-emerald-200 uppercase">Подключено</dd>
                 </div>
                 <div className="flex items-center justify-between rounded-2xl border border-white/10 bg-white/5 px-4 py-3">
                   <dt className="font-medium text-slate-200">STT model</dt>
                   <dd className="flex items-center gap-2 text-xs tracking-[0.2em] text-sky-200 uppercase">
                     <span className="size-2 rounded-full bg-sky-300" aria-hidden="true" />
-                    Deepgram Flux
+                    PortalSTT
                   </dd>
                 </div>
                 <div className="flex items-center justify-between rounded-2xl border border-white/10 bg-white/5 px-4 py-3">
                   <dt className="font-medium text-slate-200">LLM model</dt>
                   <dd className="flex items-center gap-2 text-xs tracking-[0.2em] text-indigo-200 uppercase">
                     <span className="size-2 rounded-full bg-indigo-300" aria-hidden="true" />
-                    GPT-OSS-120B
+                    PortalRT
                   </dd>
                 </div>
               </dl>
 
               <div className="rounded-2xl border border-white/10 bg-white/5 p-4 text-xs text-slate-300">
                 <p className="font-semibold tracking-[0.3em] text-slate-200/80 uppercase">
-                  Preview
+                  Предварительный просмотр
                 </p>
                 <p className="mt-2 leading-relaxed text-slate-300">
-                  “Patient reports intermittent chest tightness when climbing stairs. Recommending a
-                  stress test and follow-up in two weeks. Note flagged for cardiology review.”
+                  “Пациент отмечает периодическое ощущение сжатия в груди при подъёме по лестнице. Рекомендован стресс-тест и повторный осмотр через две недели. Запись отмечена для проверки кардиологом”
                 </p>
               </div>
             </div>
@@ -193,8 +190,7 @@ export const Welcome = ({
 
       <footer className="mx-auto mt-10 w-full max-w-5xl text-sm text-slate-500 select-none dark:text-slate-300">
         <p className="leading-relaxed">
-          This assistant transcribes each consultation, drafts SOAP-style medical notes, and keeps a
-          secure audit trail for downstream EHR workflows.
+          Этот помощник транскрибирует каждую консультацию, создаёт черновики медицинских записей в форматах SOAP и EHR
         </p>
       </footer>
     </div>

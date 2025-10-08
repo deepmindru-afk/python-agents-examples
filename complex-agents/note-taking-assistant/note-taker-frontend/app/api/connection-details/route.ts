@@ -1,6 +1,5 @@
 import { NextResponse } from 'next/server';
 import { AccessToken, type AccessTokenOptions, type VideoGrant } from 'livekit-server-sdk';
-import { RoomAgentDispatch, RoomConfiguration } from '@livekit/protocol';
 
 // NOTE: you are expected to define the following environment variables in `.env.local`:
 const API_KEY = process.env.LIVEKIT_API_KEY;
@@ -70,13 +69,5 @@ function createParticipantToken(userInfo: AccessTokenOptions, roomName: string) 
     canSubscribe: true,
   };
   at.addGrant(grant);
-  at.roomConfig = new RoomConfiguration({
-    agents: [
-      new RoomAgentDispatch({
-        agentName: "portal-med-agent",
-        metadata: '{"user_id": "12345"}',
-      }),
-    ],
-  });
   return at.toJwt();
 }

@@ -26,14 +26,14 @@ export default async function AppLayout({ children }: AppLayoutProps) {
           />
         </a>
         <span className="text-foreground font-mono text-xs font-bold tracking-wider uppercase">
-          Built with{' '}
+          Сделано людьми{' '}
           <a
             target="_blank"
             rel="noopener noreferrer"
             href="https://www.portalos.ru"
             className="underline underline-offset-4"
           >
-            Portal Agents
+            АО Портал
           </a>
         </span>
       </header>
