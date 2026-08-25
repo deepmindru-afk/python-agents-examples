@@ -22,6 +22,7 @@ import { Shimmer } from '@/components/shimmer';
 import { MORPH_SPRING, getMoodColor } from '../utils';
 import { AgentTurn } from './AgentTurn';
 import { MiniVisualizer } from './MiniVisualizer';
+import { SpeakHints } from './SpeakHints';
 import { Suggestions } from './Suggestions';
 import { UserMessage } from './UserMessage';
 
@@ -56,9 +57,11 @@ interface AgentTranscriptProps {
   className?: string;
   /** Agent in this conversation, so an accent-themed one can opt out of the mood tint. */
   agentName?: string;
+  /** Openers to suggest aloud once the agent has spoken, until the caller says something. */
+  starters?: string[];
 }
 
-export function AgentTranscript({ className, agentName }: AgentTranscriptProps) {
+export function AgentTranscript({ className, agentName, starters }: AgentTranscriptProps) {
   const { agent, state, audioTrack } = useVoiceAssistant();
   const { attributes } = useParticipantAttributes({ participant: agent });
   const room = useRoomContext();
@@ -84,11 +87,41 @@ export function AgentTranscript({ className, agentName }: AgentTranscriptProps) 
   }, [transcriptionStreams]);
 
   const rawSuggestions = attributes?.[AGENT_SUGGESTIONS_ATTRIBUTE];
-  const suggestions = useMemo(() => parseSuggestions(rawSuggestions), [rawSuggestions]);
+  const agentSuggestions = useMemo(() => parseSuggestions(rawSuggestions), [rawSuggestions]);
   const [dismissed, setDismissed] = useState(false);
   const [sentMessages, setSentMessages] = useState<{ id: string; ts: number; text: string }[]>([]);
   const sentCountRef = useRef(0);
-  const showSuggestions = !dismissed && suggestions.length > 0 && state === 'listening';
+
+  // Starters are for the opening beat only: they appear once the agent has said its greeting
+  // and retire the moment the caller has said anything at all, since past that point the
+  // conversation has a subject and a generic "book an appointment" is noise. An agent that
+  // publishes its own suggestions always wins, being able to read the room.
+  const localIdentity = room?.localParticipant?.identity;
+  const spokenBy = useMemo(() => {
+    let agentSpoke = false;
+    let callerSpoke = false;
+    for (const stream of transcriptionStreams) {
+      if (!stream.text.trim()) {
+        continue;
+      }
+      if (stream.participantInfo.identity === localIdentity) {
+        callerSpoke = true;
+      } else {
+        agentSpoke = true;
+      }
+    }
+    return { agentSpoke, callerSpoke };
+  }, [transcriptionStreams, localIdentity]);
+
+  const starterHints =
+    agentSuggestions.length === 0 &&
+    spokenBy.agentSpoke &&
+    !spokenBy.callerSpoke &&
+    sentMessages.length === 0 &&
+    state === 'listening'
+      ? (starters ?? [])
+      : [];
+  const showSuggestions = !dismissed && agentSuggestions.length > 0 && state === 'listening';
 
   useEffect(() => {
     setDismissed(false);
@@ -275,8 +308,12 @@ export function AgentTranscript({ className, agentName }: AgentTranscriptProps) 
           </AnimatePresence>
 
           {showSuggestions && (
-            <Suggestions suggestions={suggestions} handleSuggestionClick={handleSuggestionClick} />
+            <Suggestions
+              suggestions={agentSuggestions}
+              handleSuggestionClick={handleSuggestionClick}
+            />
           )}
+          {starterHints.length > 0 && <SpeakHints hints={starterHints} />}
         </div>
       </div>
     </motion.div>
