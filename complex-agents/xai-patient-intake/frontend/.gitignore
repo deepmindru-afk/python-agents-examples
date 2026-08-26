@@ -1,0 +1,15 @@
+node_modules/
+.next/
+.env
+.env.local
+next-env.d.ts
+*.tsbuildinfo
+.vercel
+.env*
+.DS_Store
+.DS_Store
+
+# `next dev`/`next build` regenerate these agent-tool instruction files; they are a
+# side effect of running the app, not part of the example.
+AGENTS.md
+CLAUDE.md
